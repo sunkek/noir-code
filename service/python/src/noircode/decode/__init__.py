@@ -1,0 +1,1 @@
+"""Decode pipeline: image -> DecodeResult."""
