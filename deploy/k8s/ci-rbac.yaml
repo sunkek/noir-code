@@ -1,0 +1,49 @@
+# Least-privilege CI deployer for the noircode namespace. Apply ONCE with an admin
+# kubeconfig (kubectl --context sunn-chat apply -f deploy/k8s/ci-rbac.yaml). The
+# resulting token can only patch noircode Deployments and watch the rollout — it
+# cannot read Secrets or touch any other namespace (e.g. ess).
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ci-deployer
+  namespace: noircode
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ci-deployer
+  namespace: noircode
+rules:
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "watch", "patch", "update"] # set image + rollout status
+  - apiGroups: ["apps"]
+    resources: ["replicasets"]
+    verbs: ["get", "list", "watch"] # rollout status inspects RS
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"] # rollout status inspects pods
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ci-deployer
+  namespace: noircode
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: ci-deployer
+subjects:
+  - kind: ServiceAccount
+    name: ci-deployer
+    namespace: noircode
+---
+# Long-lived token for CI (k8s >=1.24 doesn't auto-create SA token Secrets).
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ci-deployer-token
+  namespace: noircode
+  annotations:
+    kubernetes.io/service-account.name: ci-deployer
+type: kubernetes.io/service-account-token

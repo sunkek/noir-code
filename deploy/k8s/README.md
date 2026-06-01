@@ -62,17 +62,32 @@ After the first manual `kubectl apply -k` (which creates the namespace + resourc
 pushes to `main` auto-deploy via the `deploy` job in `.github/workflows/images.yml`:
 it pins each Deployment to the freshly-built image SHA and rolls out.
 
-Enable it with one repo secret — a base64 kubeconfig whose current context targets
-this cluster:
+Enable it with one repo secret, `KUBECONFIG_B64` — a base64 kubeconfig. Use a
+**least-privilege ServiceAccount** scoped to `noircode` (it can patch Deployments and
+watch the rollout, but cannot read Secrets or touch other namespaces like `ess`):
 
 ```bash
-base64 -w0 < /path/to/sunn-chat.kubeconfig    # copy output
-# GitHub → repo Settings → Secrets and variables → Actions → New secret
-#   Name: KUBECONFIG_B64    Value: <the base64 blob>
+# 1. Create the scoped SA + Role + token (once, with an admin context):
+kubectl --context sunn-chat apply -f deploy/k8s/ci-rbac.yaml
+
+# 2. Build a kubeconfig from that token and base64 it:
+S=https://185.250.44.100:6443
+N="kubectl --context sunn-chat -n noircode"
+CA=$($N get secret ci-deployer-token -o jsonpath='{.data.ca\.crt}')
+TOKEN=$($N get secret ci-deployer-token -o jsonpath='{.data.token}' | base64 -d)
+cat > /tmp/ci.kubeconfig <<EOF
+apiVersion: v1
+kind: Config
+clusters: [{name: c, cluster: {server: $S, certificate-authority-data: $CA}}]
+contexts: [{name: ci, context: {cluster: c, namespace: noircode, user: ci}}]
+current-context: ci
+users: [{name: ci, user: {token: $TOKEN}}]
+EOF
+base64 -w0 /tmp/ci.kubeconfig && rm /tmp/ci.kubeconfig
+# 3. Paste the blob into: repo → Settings → Secrets → Actions → KUBECONFIG_B64
 ```
 
-Without the secret the deploy job no-ops (stays green). Scope the kubeconfig's
-ServiceAccount to the `noircode` namespace if you want to limit CI's blast radius.
+Without the secret the deploy job no-ops (stays green).
 
 ## Notes
 
