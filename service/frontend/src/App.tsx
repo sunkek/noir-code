@@ -6,6 +6,13 @@ const API = import.meta.env.VITE_API_BASE ?? '/api/v1'
 const MAX_BYTES = 173
 const byteLen = (s: string) => new TextEncoder().encode(s).length
 
+// Prefill the encode box from a ?text= (or ?d=) query param, else a sensible default.
+// e.g. https://noir-code.suncake.xyz/?text=hello
+function initialEncodeText(): string {
+  const p = new URLSearchParams(window.location.search)
+  return p.get('text') ?? p.get('d') ?? 'https://noir-code.suncake.xyz'
+}
+
 type DecodeResult = {
   ok: boolean
   text: string | null
@@ -27,7 +34,7 @@ async function errorDetail(res: Response): Promise<string> {
 }
 
 function Encoder({ t }: { t: Dict }) {
-  const [text, setText] = useState('https://noir.example')
+  const [text, setText] = useState(initialEncodeText)
   const [style, setStyle] = useState(true)
   const [hatch, setHatch] = useState(true)
   const [adaptive, setAdaptive] = useState(true)
