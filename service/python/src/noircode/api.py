@@ -33,6 +33,10 @@ app = FastAPI(title="NoiR Code imaging sidecar", version="0.1.0")
 
 # Permissive CORS by default for local dev (the Go gateway also fronts this in prod and
 # does not need it). Lock down with NOIRCODE_API_CORS_ORIGINS="https://a,https://b".
+# Branding caption stamped under generated panels (outside the decode region). Set
+# empty to disable.
+DEFAULT_CAPTION = os.environ.get("NOIRCODE_CAPTION", "noir-code.suncake.xyz")
+
 _origins = os.environ.get("NOIRCODE_API_CORS_ORIGINS", "*").split(",")
 app.add_middleware(
     CORSMiddleware,
@@ -49,6 +53,9 @@ class EncodeRequest(BaseModel):
     style: bool = Field(False, description="Apply the noir styling + halftone artwork.")
     hatch_data: bool = Field(False, description="Hatch the data cells (engraving look).")
     adaptive: bool = Field(True, description="Shrink the grid to the smallest fitting size.")
+    caption: str | None = Field(
+        None, description="Caption stamped under the panel; null uses the server default."
+    )
 
 
 class DecodeResponse(BaseModel):
@@ -77,8 +84,11 @@ def health() -> dict[str, str]:
 def encode(req: EncodeRequest) -> Response:
     """Encode text to a PNG panel."""
     cfg = dataclasses.replace(Config(), hatched_data=req.hatch_data)
+    caption = DEFAULT_CAPTION if req.caption is None else req.caption
     try:
-        panel = encode_text(req.text, cfg, style=req.style, adaptive=req.adaptive)
+        panel = encode_text(
+            req.text, cfg, style=req.style, adaptive=req.adaptive, caption=caption or None
+        )
     except EccError:
         limit = cfg.rs_data_bytes - 7
         raise HTTPException(

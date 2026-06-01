@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import zlib
 
+import cv2
 import numpy as np
 
 from noircode.channels import checksum_byte, interleave
@@ -43,6 +44,7 @@ def encode(
     style: bool = False,
     art: np.ndarray | None = None,
     adaptive: bool = False,
+    caption: str | None = None,
 ) -> np.ndarray:
     """Encode ``text`` to a canonical grayscale panel (uint8).
 
@@ -85,4 +87,27 @@ def encode(
     draw_frame(canvas, cfg, panel)
     if style:
         draw_inner_rule(canvas, cfg, panel)
+    if caption:
+        canvas = _add_caption(canvas, caption)
     return canvas
+
+
+def _add_caption(canvas: np.ndarray, caption: str) -> np.ndarray:
+    """Append a noir caption band below the panel. Rendered OUTSIDE the frame and its
+    quiet zone, so it never affects detection or decoding — it is pure branding."""
+    w = canvas.shape[1]
+    band = max(30, w // 16)
+    footer = np.full((band, w), PANEL_BACKGROUND, dtype=np.uint8)
+    font = cv2.FONT_HERSHEY_DUPLEX
+    scale = w / 900.0
+    thickness = max(1, round(scale * 1.4))
+    (tw, _), _ = cv2.getTextSize(caption, font, scale, thickness)
+    if tw > w * 0.9:  # shrink to fit
+        scale *= (w * 0.9) / tw
+        thickness = max(1, round(scale * 1.4))
+        (tw, _), _ = cv2.getTextSize(caption, font, scale, thickness)
+    (tw, th), _ = cv2.getTextSize(caption, font, scale, thickness)
+    org = ((w - tw) // 2, (band + th) // 2)
+    cv2.putText(footer, caption, org, font, scale, 35, thickness, cv2.LINE_AA)
+    result: np.ndarray = np.vstack([canvas, footer])
+    return result
