@@ -1,0 +1,35 @@
+# Python (service/python)
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+dist/
+build/
+
+# Node / Vite (service/frontend)
+node_modules/
+service/frontend/dist/
+*.tsbuildinfo
+
+# Go (service/backend)
+/service/backend/tmp/
+/service/backend/main
+/service/backend/health
+
+# Local tooling / agent state — never publish
+.claude/
+.idea/
+.vscode/
+
+# Generated env with real secrets — only env/example/ is committed
+env/dev/
+env/local/
+env/stage/
+env/prod/
+
+# Scratch
+*.log
+.DS_Store
