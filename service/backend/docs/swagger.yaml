@@ -1,0 +1,94 @@
+components:
+  schemas:
+    github_com_noircode_backend_internal_domain_noircode_model.DecodeResult:
+      properties:
+        confidence:
+          type: number
+        cross_check:
+          type: boolean
+        failed_stage:
+          type: string
+        grid_erasures:
+          type: integer
+        motif_erasures:
+          type: integer
+        ok:
+          type: boolean
+        rotation:
+          type: integer
+        text:
+          type: string
+      type: object
+    internal_domain_noircode_adapter_fiber.encodeReq:
+      properties:
+        adaptive:
+          description: |-
+            Adaptive defaults to true (smaller panel for short text). Send false to
+            force the full fixed grid.
+          type: boolean
+        hatch_data:
+          type: boolean
+        style:
+          type: boolean
+        text:
+          type: string
+      type: object
+externalDocs:
+  description: ""
+  url: ""
+info:
+  contact:
+    name: Sunkek
+  description: Encode text into a NoiR Code panel and decode panels back to text.
+  title: NoiR Code API
+  version: "0.1"
+openapi: 3.1.0
+paths:
+  /decode:
+    post:
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              title: image
+              type: file
+          multipart/form-data:
+            schema:
+              type: object
+        description: panel image (PNG/JPEG)
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/github_com_noircode_backend_internal_domain_noircode_model.DecodeResult'
+          description: OK
+      summary: Decode a NoiR Code panel image to text
+      tags:
+      - noircode
+  /encode:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+              - type: object
+              - $ref: '#/components/schemas/internal_domain_noircode_adapter_fiber.encodeReq'
+                description: encode options
+                summary: body
+        description: encode options
+        required: true
+      responses:
+        "200":
+          content:
+            image/png:
+              schema:
+                type: file
+          description: OK
+      summary: Encode text into a NoiR Code panel
+      tags:
+      - noircode
+servers:
+- url: /api/v1

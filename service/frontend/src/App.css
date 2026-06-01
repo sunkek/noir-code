@@ -1,0 +1,275 @@
+:root {
+  --ink: #050506;
+  --panel-bg: #0c0c0e;
+  --paper: #e8e6e1;
+  --muted: #6f6d68;
+  --line: #1c1c20;
+  --accent: #e10600;
+  --accent-dim: #7a0a06;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+  border-radius: 0 !important;
+}
+
+body {
+  margin: 0;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+main {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 3rem 1.5rem 4rem;
+}
+
+header {
+  border-bottom: 2px solid var(--accent);
+  padding-bottom: 1rem;
+  margin-bottom: 2rem;
+}
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+.lang {
+  display: flex;
+  gap: 0;
+}
+
+header h1 {
+  font-size: 3rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin: 0;
+}
+header h1 span,
+header em {
+  color: var(--accent);
+  font-style: normal;
+}
+header p {
+  color: var(--muted);
+  margin-top: 0.4rem;
+  letter-spacing: 0.02em;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+@media (max-width: 760px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.panel {
+  background: var(--panel-bg);
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--accent);
+  padding: 1.5rem;
+}
+.panel h2 {
+  margin: 0 0 1.25rem;
+  font-size: 0.95rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--paper);
+}
+
+textarea,
+input[type='file'] {
+  width: 100%;
+  background: #000;
+  border: 1px solid var(--line);
+  color: var(--paper);
+  padding: 0.8rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  resize: vertical;
+}
+textarea:focus,
+input[type='file']:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.counter {
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0.5rem 0 1rem;
+}
+.counter.over {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.opts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+}
+.opts label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  color: var(--paper);
+}
+.opts input[type='checkbox'] {
+  accent-color: var(--accent);
+  width: 1rem;
+  height: 1rem;
+}
+
+button {
+  background: var(--accent);
+  color: #fff;
+  border: 0;
+  padding: 0.7rem 1.6rem;
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+button:hover:not(:disabled) {
+  background: #ff1a0d;
+}
+button:disabled {
+  background: var(--accent-dim);
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.err {
+  color: var(--accent);
+  font-size: 0.85rem;
+  border-left: 2px solid var(--accent);
+  padding-left: 0.6rem;
+  margin-top: 1rem;
+}
+
+.result {
+  margin-top: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.7rem;
+}
+.result img {
+  max-width: 100%;
+  border: 1px solid var(--line);
+  image-rendering: pixelated;
+}
+.result a {
+  color: var(--accent);
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-decoration: none;
+  border-bottom: 1px solid var(--accent-dim);
+}
+.result a:hover {
+  border-bottom-color: var(--accent);
+}
+
+.tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 1rem;
+}
+.tab {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  padding: 0.45rem 1rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.tab.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.scanner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.scanner video {
+  width: 100%;
+  background: #000;
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--accent);
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+}
+.cam-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.cam-controls .hint {
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.cam-buttons {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.decoded {
+  margin-top: 1.25rem;
+}
+.decoded .text {
+  font-size: 1.05rem;
+  word-break: break-all;
+  background: #000;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  padding: 0.85rem;
+}
+.decoded dl {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem 1rem;
+  font-size: 0.8rem;
+  margin: 1rem 0 0;
+}
+.decoded dl div {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 0.25rem;
+}
+.decoded dt {
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.decoded dd {
+  margin: 0;
+  color: var(--paper);
+  font-variant-numeric: tabular-nums;
+}
