@@ -1,0 +1,29 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: noircode
+
+resources:
+  - namespace.yaml
+  - imaging.yaml
+  - backend.yaml
+  - frontend.yaml
+  - ingress.yaml
+
+commonLabels:
+  app.kubernetes.io/part-of: noircode
+
+# Point these at your GHCR packages. sunkek = your GitHub org/user (lower
+# case). Pin newTag to an immutable tag (a git SHA from CI) for real deploys;
+# "latest" is fine to start. Override quickly with:
+#   kustomize edit set image noircode-backend=ghcr.io/me/noircode-backend:abc123
+images:
+  - name: noircode-imaging
+    newName: ghcr.io/sunkek/noircode-imaging
+    newTag: latest
+  - name: noircode-backend
+    newName: ghcr.io/sunkek/noircode-backend
+    newTag: latest
+  - name: noircode-frontend
+    newName: ghcr.io/sunkek/noircode-frontend
+    newTag: latest

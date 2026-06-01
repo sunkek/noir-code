@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  labels: { app: backend }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: backend }
+  template:
+    metadata:
+      labels: { app: backend }
+    spec:
+      containers:
+        - name: backend
+          image: noircode-backend # remapped to GHCR by kustomization.yaml
+          env:
+            - { name: NOIRCODE_API_FIBER_HOST, value: "0.0.0.0" }
+            - { name: NOIRCODE_API_FIBER_PORT, value: "8000" }
+            - { name: NOIRCODE_API_HEALTH_PORT, value: "3333" }
+            - { name: NOIRCODE_API_IMAGING_BASE_URL, value: "http://imaging:8001" }
+            - { name: NOIRCODE_API_FIBER_SWAGGER_FILE_PATH, value: "/docs/swagger.json" }
+          ports:
+            - { containerPort: 8000, name: http }
+            - { containerPort: 3333, name: health }
+          readinessProbe:
+            httpGet: { path: /healthz, port: 3333 }
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /healthz, port: 3333 }
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          resources:
+            requests: { cpu: 50m, memory: 64Mi }
+            limits: { cpu: 500m, memory: 256Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+spec:
+  selector: { app: backend }
+  ports:
+    - port: 8000
+      targetPort: 8000

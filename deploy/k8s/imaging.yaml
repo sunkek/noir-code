@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: imaging
+  labels: { app: imaging }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: imaging }
+  template:
+    metadata:
+      labels: { app: imaging }
+    spec:
+      containers:
+        - name: imaging
+          image: noircode-imaging # remapped to GHCR by kustomization.yaml
+          ports:
+            - containerPort: 8001
+          readinessProbe:
+            httpGet: { path: /health, port: 8001 }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /health, port: 8001 }
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests: { cpu: 100m, memory: 192Mi } # OpenCV: a touch more headroom
+            limits: { cpu: "1", memory: 512Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: imaging
+spec:
+  selector: { app: imaging }
+  ports:
+    - port: 8001
+      targetPort: 8001

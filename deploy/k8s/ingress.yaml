@@ -1,0 +1,23 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: noircode
+  annotations:
+    # cert-manager ClusterIssuer on the sunn-chat cluster (same one ESS uses).
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts: [noir-code.suncake.xyz]
+      secretName: noircode-tls
+  rules:
+    - host: noir-code.suncake.xyz
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 80

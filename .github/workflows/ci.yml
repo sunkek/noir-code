@@ -1,0 +1,56 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  python:
+    name: python (core + sidecar)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: service/python
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync --extra api
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run mypy
+      - run: uv run pytest -q
+
+  backend:
+    name: backend (Go gateway)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: service/backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+          cache-dependency-path: service/backend/go.sum
+      - name: gofmt
+        run: test -z "$(gofmt -l .)" || { echo "gofmt needs to run on:"; gofmt -l .; exit 1; }
+      - run: go build ./...
+      - run: go vet ./...
+      - run: go test ./...
+
+  frontend:
+    name: frontend (React SPA)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: service/frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: service/frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
