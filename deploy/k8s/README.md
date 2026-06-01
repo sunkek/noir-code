@@ -56,6 +56,24 @@ kubectl -n noircode get ingress
 
 Then open `https://<host>`. Swagger at `https://<host>/api/v1/docs`.
 
+## Continuous deploy
+
+After the first manual `kubectl apply -k` (which creates the namespace + resources),
+pushes to `main` auto-deploy via the `deploy` job in `.github/workflows/images.yml`:
+it pins each Deployment to the freshly-built image SHA and rolls out.
+
+Enable it with one repo secret — a base64 kubeconfig whose current context targets
+this cluster:
+
+```bash
+base64 -w0 < /path/to/sunn-chat.kubeconfig    # copy output
+# GitHub → repo Settings → Secrets and variables → Actions → New secret
+#   Name: KUBECONFIG_B64    Value: <the base64 blob>
+```
+
+Without the secret the deploy job no-ops (stays green). Scope the kubeconfig's
+ServiceAccount to the `noircode` namespace if you want to limit CI's blast radius.
+
 ## Notes
 
 - The stack is stateless — no PVCs, DB, or broker.

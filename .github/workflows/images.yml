@@ -53,3 +53,33 @@ jobs:
             ghcr.io/${{ steps.owner.outputs.name }}/noircode-${{ matrix.component }}:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  # Continuous deploy: pin each Deployment to the freshly-built SHA and roll out.
+  # Requires repo secret KUBECONFIG_B64 = base64 of a kubeconfig whose current
+  # context targets the cluster (namespace noircode). Runs on main only.
+  deploy:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    concurrency: deploy-noircode # never overlap two rollouts
+    env:
+      KUBECONFIG_B64: ${{ secrets.KUBECONFIG_B64 }}
+    steps:
+      - uses: azure/setup-kubectl@v4
+
+      - name: Roll out new images
+        run: |
+          if [ -z "$KUBECONFIG_B64" ]; then
+            echo "KUBECONFIG_B64 secret not set — skipping deploy."
+            exit 0
+          fi
+          mkdir -p ~/.kube
+          echo "$KUBECONFIG_B64" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+          owner=${GITHUB_REPOSITORY_OWNER,,}
+          for c in imaging backend frontend; do
+            kubectl -n noircode set image "deployment/$c" \
+              "$c=ghcr.io/$owner/noircode-$c:${GITHUB_SHA}"
+          done
+          kubectl -n noircode rollout status \
+            deployment/imaging deployment/backend deployment/frontend --timeout=180s
