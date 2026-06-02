@@ -36,7 +36,7 @@ async function errorDetail(res: Response): Promise<string> {
 function Encoder({ t }: { t: Dict }) {
   const [text, setText] = useState(initialEncodeText)
   const [style, setStyle] = useState(true)
-  const [hatch, setHatch] = useState(true)
+  const [hatch, setHatch] = useState(false)
   const [adaptive, setAdaptive] = useState(true)
   const [caption, setCaption] = useState(true)
   const [png, setPng] = useState<string | null>(null)
