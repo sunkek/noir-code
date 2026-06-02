@@ -34,10 +34,11 @@ func New(baseURL string, timeout time.Duration) *Adapter {
 }
 
 type encodeReq struct {
-	Text      string `json:"text"`
-	Style     bool   `json:"style"`
-	HatchData bool   `json:"hatch_data"`
-	Adaptive  bool   `json:"adaptive"`
+	Text      string  `json:"text"`
+	Style     bool    `json:"style"`
+	HatchData bool    `json:"hatch_data"`
+	Adaptive  bool    `json:"adaptive"`
+	Caption   *string `json:"caption,omitempty"`
 }
 
 type errBody struct {
@@ -51,6 +52,7 @@ func (a *Adapter) Encode(ctx context.Context, in model.EncodeInput) ([]byte, err
 		Style:     in.Style,
 		HatchData: in.HatchData,
 		Adaptive:  in.Adaptive,
+		Caption:   in.Caption,
 	})
 	if err != nil {
 		return nil, mishap.Wrap(err, "marshal encode request")

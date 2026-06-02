@@ -35,6 +35,9 @@ type encodeReq struct {
 	// Adaptive defaults to true (smaller panel for short text). Send false to
 	// force the full fixed grid.
 	Adaptive *bool `json:"adaptive"`
+	// Caption stamped under the panel. Omit to use the server default; send an
+	// empty string to disable the caption.
+	Caption *string `json:"caption,omitempty"`
 }
 
 // handleEncode godoc
@@ -60,6 +63,7 @@ func (a *Adapter) handleEncode(ctx gf.Ctx) error {
 		Style:     req.Style,
 		HatchData: req.HatchData,
 		Adaptive:  adaptive,
+		Caption:   req.Caption,
 	})
 	if err != nil {
 		return err

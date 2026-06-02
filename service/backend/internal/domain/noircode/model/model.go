@@ -9,6 +9,9 @@ type EncodeInput struct {
 	Style     bool // noir styling + halftone artwork
 	HatchData bool // render data cells as line hatching (engraving look)
 	Adaptive  bool // shrink the grid to the smallest size that fits the text
+	// Caption stamped under the panel. nil uses the sidecar's default branding;
+	// a non-nil empty string disables the caption entirely.
+	Caption *string
 }
 
 // DecodeResult is the structured outcome of decoding a panel image. It mirrors
