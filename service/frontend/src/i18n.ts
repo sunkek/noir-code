@@ -12,6 +12,7 @@ export type Dict = {
   noirStyle: string
   hatchedData: string
   adaptiveSize: string
+  caption: string
   bytes: (n: number, max: number) => string
   textPlaceholder: string
   encodeBtn: string
@@ -42,6 +43,7 @@ const en: Dict = {
   noirStyle: 'Noir style',
   hatchedData: 'Hatched data',
   adaptiveSize: 'Adaptive size',
+  caption: 'Caption',
   bytes: (n, max) => `${n} / ${max} bytes`,
   textPlaceholder: 'Text to encode…',
   encodeBtn: 'Encode',
@@ -72,6 +74,7 @@ const ru: Dict = {
   noirStyle: 'Нуар-стиль',
   hatchedData: 'Штриховка данных',
   adaptiveSize: 'Адаптивный размер',
+  caption: 'Подпись',
   bytes: (n, max) => `${n} / ${max} байт`,
   textPlaceholder: 'Текст для кодирования…',
   encodeBtn: 'Кодировать',
@@ -81,7 +84,7 @@ const ru: Dict = {
   scanCamera: 'Сканировать',
   pointAtPanel: 'Наведите на панель…',
   startingCamera: 'Запуск камеры…',
-  flip: 'Сменить',
+  flip: 'Перевернуть',
   torch: 'Фонарик',
   decoding: 'Декодирую…',
   couldNotDecode: (stage) => `Не удалось декодировать: ${stage}`,

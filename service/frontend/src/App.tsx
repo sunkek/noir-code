@@ -38,6 +38,7 @@ function Encoder({ t }: { t: Dict }) {
   const [style, setStyle] = useState(true)
   const [hatch, setHatch] = useState(true)
   const [adaptive, setAdaptive] = useState(true)
+  const [caption, setCaption] = useState(true)
   const [png, setPng] = useState<string | null>(null)
   const [err, setErr] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -52,7 +53,8 @@ function Encoder({ t }: { t: Dict }) {
       const res = await fetch(`${API}/encode`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ text, style, hatch_data: hatch, adaptive }),
+        // caption on -> omit (sidecar stamps its default); off -> "" forces none.
+        body: JSON.stringify({ text, style, hatch_data: hatch, adaptive, caption: caption ? undefined : '' }),
       })
       if (!res.ok) throw new Error(await errorDetail(res))
       const blob = await res.blob()
@@ -82,6 +84,7 @@ function Encoder({ t }: { t: Dict }) {
         <label><input type="checkbox" checked={style} onChange={(e) => setStyle(e.target.checked)} /> {t.noirStyle}</label>
         <label><input type="checkbox" checked={hatch} onChange={(e) => setHatch(e.target.checked)} /> {t.hatchedData}</label>
         <label><input type="checkbox" checked={adaptive} onChange={(e) => setAdaptive(e.target.checked)} /> {t.adaptiveSize}</label>
+        <label><input type="checkbox" checked={caption} onChange={(e) => setCaption(e.target.checked)} /> {t.caption}</label>
       </div>
       <button onClick={encode} disabled={busy || over || text.trim() === ''}>
         {busy ? t.encoding : t.encodeBtn}
