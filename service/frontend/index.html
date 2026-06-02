@@ -2,12 +2,67 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="64x64" href="/favicon-64.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>NoiR Code</title>
+    <meta name="theme-color" content="#000000" />
+
+    <title>NoiR Code — a QR code that's also a noir comic panel</title>
+    <meta
+      name="description"
+      content="NoiR Code turns your text into a scannable noir comic panel — a QR-like code that is also a rain-soaked halftone cityscape. Encode, decode, and camera-scan right in your browser."
+    />
+    <link rel="canonical" href="https://noir-code.suncake.xyz/" />
+
+    <!-- Open Graph (Slack / Telegram / Discord / Facebook / LinkedIn) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="NoiR Code" />
+    <meta property="og:url" content="https://noir-code.suncake.xyz/" />
+    <meta property="og:title" content="NoiR Code — a QR code that's also a noir comic panel" />
+    <meta
+      property="og:description"
+      content="Encode your message into a scannable noir cityscape. A QR-like code that is also art — encode, decode, and camera-scan in the browser."
+    />
+    <meta property="og:image" content="https://noir-code.suncake.xyz/og.png" />
+    <meta property="og:image:alt" content="A NoiR Code panel: a halftone noir cityscape with a moon, made entirely of data cells." />
+
+    <!-- Twitter / X -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="NoiR Code — a QR code that's also a noir comic panel" />
+    <meta
+      name="twitter:description"
+      content="Encode your message into a scannable noir cityscape. A QR-like code that is also art."
+    />
+    <meta name="twitter:image" content="https://noir-code.suncake.xyz/og.png" />
+
+    <!-- Structured data for search engines -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "NoiR Code",
+        "url": "https://noir-code.suncake.xyz/",
+        "description": "A QR-like visual encoder where the code is a noir comic panel. Encode text into a scannable halftone cityscape, and decode it back from an image or live camera.",
+        "applicationCategory": "UtilitiesApplication",
+        "operatingSystem": "Any (web browser)",
+        "offers": { "@type": "Offer", "price": "0" }
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
+    <noscript>
+      <h1>NoiR Code</h1>
+      <p>Your message, hidden in the shadows of a nocturnal city of rain.</p>
+      <p>
+        NoiR Code is a QR-like visual encoder where the code <em>is</em> a noir
+        comic panel. It turns text into a scannable, rain-soaked halftone
+        cityscape, and decodes it back from an uploaded image or a live camera
+        scan. NoiR Code needs JavaScript enabled to encode and decode in your
+        browser.
+      </p>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

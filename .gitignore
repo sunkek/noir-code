@@ -33,3 +33,9 @@ env/prod/
 # Scratch
 *.log
 .DS_Store
+*-command-message*.txt
+
+# Private draft article + its source assets (not for publication)
+docs/blog.md
+docs/img/
+service/python/scripts/make_og.py
