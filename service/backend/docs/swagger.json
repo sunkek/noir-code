@@ -36,6 +36,10 @@
                         "description": "Adaptive defaults to true (smaller panel for short text). Send false to\nforce the full fixed grid.",
                         "type": "boolean"
                     },
+                    "caption": {
+                        "description": "Caption stamped under the panel. Omit to use the server default; send an\nempty string to disable the caption.",
+                        "type": "string"
+                    },
                     "hatch_data": {
                         "type": "boolean"
                     },

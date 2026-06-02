@@ -26,6 +26,11 @@ components:
             Adaptive defaults to true (smaller panel for short text). Send false to
             force the full fixed grid.
           type: boolean
+        caption:
+          description: |-
+            Caption stamped under the panel. Omit to use the server default; send an
+            empty string to disable the caption.
+          type: string
         hatch_data:
           type: boolean
         style:
