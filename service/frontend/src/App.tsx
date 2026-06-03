@@ -387,6 +387,11 @@ export default function App() {
         <Encoder t={t} />
         <Decoder t={t} />
       </div>
+      <footer className="site-footer">
+        <a href="https://github.com/sunkek/noir-code" target="_blank" rel="noopener noreferrer">
+          {t.sourceCode}
+        </a>
+      </footer>
     </main>
   )
 }

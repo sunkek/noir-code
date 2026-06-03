@@ -210,6 +210,23 @@ button:disabled {
   border-color: var(--accent);
 }
 
+.site-footer {
+  margin-top: 2rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+.site-footer a {
+  color: var(--muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+.site-footer a:hover {
+  color: var(--accent);
+}
+
 .url-input {
   display: flex;
   gap: 0;

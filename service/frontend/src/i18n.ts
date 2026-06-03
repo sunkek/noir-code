@@ -18,6 +18,7 @@ export type Dict = {
   encodeBtn: string
   encoding: string
   downloadPng: string
+  sourceCode: string
   upload: string
   scanCamera: string
   fromUrl: string
@@ -52,6 +53,7 @@ const en: Dict = {
   encodeBtn: 'Encode',
   encoding: 'Encoding…',
   downloadPng: 'Download PNG',
+  sourceCode: 'Source code ↗',
   upload: 'Upload',
   scanCamera: 'Scan camera',
   fromUrl: 'From URL',
@@ -86,6 +88,7 @@ const ru: Dict = {
   encodeBtn: 'Кодировать',
   encoding: 'Кодирую…',
   downloadPng: 'Скачать PNG',
+  sourceCode: 'Исходный код ↗',
   upload: 'Загрузить',
   scanCamera: 'Сканировать',
   fromUrl: 'По ссылке',
