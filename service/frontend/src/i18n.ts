@@ -20,6 +20,9 @@ export type Dict = {
   downloadPng: string
   upload: string
   scanCamera: string
+  fromUrl: string
+  urlPlaceholder: string
+  decodeUrlBtn: string
   pointAtPanel: string
   startingCamera: string
   flip: string
@@ -51,6 +54,9 @@ const en: Dict = {
   downloadPng: 'Download PNG',
   upload: 'Upload',
   scanCamera: 'Scan camera',
+  fromUrl: 'From URL',
+  urlPlaceholder: 'https://example.com/panel.png',
+  decodeUrlBtn: 'Decode',
   pointAtPanel: 'Point at a panel…',
   startingCamera: 'Starting camera…',
   flip: 'Flip',
@@ -82,6 +88,9 @@ const ru: Dict = {
   downloadPng: 'Скачать PNG',
   upload: 'Загрузить',
   scanCamera: 'Сканировать',
+  fromUrl: 'По ссылке',
+  urlPlaceholder: 'https://example.com/panel.png',
+  decodeUrlBtn: 'Декодировать',
   pointAtPanel: 'Наведите на панель…',
   startingCamera: 'Запуск камеры…',
   flip: 'Перевернуть',

@@ -109,6 +109,18 @@ async function postDecode(blob: Blob): Promise<DecodeResult> {
   return (await res.json()) as DecodeResult
 }
 
+// POST a remote image URL; the gateway fetches it (with egress safeguards) and
+// decodes it. Throws on HTTP error.
+async function postDecodeURL(url: string): Promise<DecodeResult> {
+  const res = await fetch(`${API}/decode-url`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url }),
+  })
+  if (!res.ok) throw new Error(await errorDetail(res))
+  return (await res.json()) as DecodeResult
+}
+
 function ResultView({ result, t }: { result: DecodeResult; t: Dict }) {
   if (!result.ok) return <p className="err">{t.couldNotDecode(result.failed_stage)}</p>
   return (
@@ -125,11 +137,12 @@ function ResultView({ result, t }: { result: DecodeResult; t: Dict }) {
 }
 
 function Decoder({ t }: { t: Dict }) {
-  const [mode, setMode] = useState<'upload' | 'camera'>('upload')
+  const [mode, setMode] = useState<'upload' | 'camera' | 'url'>('upload')
   const [result, setResult] = useState<DecodeResult | null>(null)
   const [err, setErr] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [preview, setPreview] = useState<string | null>(null)
+  const [url, setUrl] = useState('')
   const [scanning, setScanning] = useState(false)
   const [facing, setFacing] = useState<'environment' | 'user'>('environment')
   const [torchSupported, setTorchSupported] = useState(false)
@@ -170,6 +183,22 @@ function Decoder({ t }: { t: Dict }) {
     })
     try {
       setResult(await postDecode(file))
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function decodeUrl() {
+    const target = url.trim()
+    if (!target) return
+    setErr(null)
+    setResult(null)
+    setPreview(target)
+    setBusy(true)
+    try {
+      setResult(await postDecodeURL(target))
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e))
     } finally {
@@ -256,6 +285,9 @@ function Decoder({ t }: { t: Dict }) {
         <button className={mode === 'camera' ? 'tab active' : 'tab'} onClick={() => setMode('camera')}>
           {t.scanCamera}
         </button>
+        <button className={mode === 'url' ? 'tab active' : 'tab'} onClick={() => setMode('url')}>
+          {t.fromUrl}
+        </button>
       </div>
 
       {mode === 'upload' && (
@@ -292,9 +324,27 @@ function Decoder({ t }: { t: Dict }) {
         </div>
       )}
 
+      {mode === 'url' && (
+        <div className="url-input">
+          <input
+            type="url"
+            inputMode="url"
+            placeholder={t.urlPlaceholder}
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') decodeUrl()
+            }}
+          />
+          <button className="tab" onClick={decodeUrl} disabled={busy || !url.trim()}>
+            {t.decodeUrlBtn}
+          </button>
+        </div>
+      )}
+
       {busy && <p>{t.decoding}</p>}
       {err && <p className="err">{err}</p>}
-      {mode === 'upload' && preview && (
+      {(mode === 'upload' || mode === 'url') && preview && (
         <div className="result">
           <img src={preview} alt="uploaded panel" />
         </div>

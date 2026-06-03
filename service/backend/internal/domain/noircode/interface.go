@@ -13,6 +13,8 @@ type Service interface {
 	Encode(ctx context.Context, in model.EncodeInput) ([]byte, error)
 	// Decode reads a panel image and returns the decoded text + diagnostics.
 	Decode(ctx context.Context, image []byte) (model.DecodeResult, error)
+	// DecodeURL fetches an image from a remote URL and decodes it.
+	DecodeURL(ctx context.Context, url string) (model.DecodeResult, error)
 }
 
 // Imaging is the outbound port: the actual encode/decode work, delegated to the
@@ -21,4 +23,11 @@ type Service interface {
 type Imaging interface {
 	Encode(ctx context.Context, in model.EncodeInput) ([]byte, error)
 	Decode(ctx context.Context, image []byte) (model.DecodeResult, error)
+}
+
+// Fetcher is the outbound port for retrieving a remote image by URL. The
+// urlfetch adapter implements it and owns all egress safety (SSRF guard, size
+// cap, timeouts, throttling).
+type Fetcher interface {
+	Fetch(ctx context.Context, url string) ([]byte, error)
 }

@@ -210,6 +210,30 @@ button:disabled {
   border-color: var(--accent);
 }
 
+.url-input {
+  display: flex;
+  gap: 0;
+  margin-bottom: 1rem;
+}
+.url-input input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  color: var(--paper);
+  border: 1px solid var(--line);
+  border-right: none;
+  padding: 0.45rem 0.7rem;
+  font-size: 0.85rem;
+}
+.url-input input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.url-input .tab:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .scanner {
   display: flex;
   flex-direction: column;

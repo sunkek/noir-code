@@ -13,6 +13,7 @@ import (
 	"github.com/noircode/backend/internal/common/e"
 	"github.com/noircode/backend/internal/common/metrics"
 	"github.com/noircode/backend/internal/common/middleware"
+	"github.com/noircode/backend/internal/common/urlfetch"
 	"github.com/noircode/backend/internal/domain/noircode"
 	noircodefiber "github.com/noircode/backend/internal/domain/noircode/adapter/fiber"
 	"github.com/noircode/backend/internal/domain/noircode/adapter/pyimaging"
@@ -25,11 +26,11 @@ import (
 	"github.com/sunkek/samsara-components/fiber"
 )
 
-// @Title						NoiR Code API
-// @Version					0.1
-// @Description				Encode text into a NoiR Code panel and decode panels back to text.
-// @Contact.name				Sunkek
-// @BasePath					/api/v1
+// @Title			NoiR Code API
+// @Version		0.1
+// @Description	Encode text into a NoiR Code panel and decode panels back to text.
+// @Contact.name	Sunkek
+// @BasePath		/api/v1
 func main() {
 	local := flag.Bool("l", false, "load env/local/api.env for running outside Docker")
 	flag.Parse()
@@ -95,6 +96,9 @@ func main() {
 	fiberCmp.Use(middleware.RateLimit(middleware.RateLimitConfig{
 		Max:    cfg.RateLimit.Max,
 		Window: cfg.RateLimit.Window,
+		// Behind Traefik+nginx the socket peer is a proxy; key on the real
+		// client from X-Forwarded-For (spoof-resistant: right-most public IP).
+		KeyFunc: middleware.ClientIP,
 	}))
 	// Expose Prometheus metrics. Public (scraped without a token); in production
 	// bind it to an internal network/port rather than the public ingress.
@@ -120,9 +124,19 @@ func main() {
 	)
 
 	// noircode: the only domain. Build imaging adapter (HTTP client to the Python
-	// sidecar) → domain → REST adapter. Wiring is compile-time checked.
+	// sidecar) + the URL fetcher (egress-guarded) → domain → REST adapter.
+	// Wiring is compile-time checked.
 	imaging := pyimaging.New(cfg.Imaging.BaseURL, cfg.Imaging.Timeout)
-	noircodeDomain := noircode.New(imaging)
+	fetcher := urlfetch.New(urlfetch.Config{
+		Timeout:      cfg.URLFetch.Timeout,
+		MaxBytes:     int64(cfg.URLFetch.MaxBytesMB) << 20,
+		MaxRedirects: cfg.URLFetch.MaxRedirects,
+		GlobalPerSec: cfg.URLFetch.GlobalPerSec,
+		GlobalBurst:  cfg.URLFetch.GlobalBurst,
+		HostPerSec:   cfg.URLFetch.HostPerSec,
+		HostBurst:    cfg.URLFetch.HostBurst,
+	})
+	noircodeDomain := noircode.New(imaging, fetcher)
 	_ = noircodefiber.New(fiberCmp, noircodeDomain)
 
 	app := samsara.NewApplication(

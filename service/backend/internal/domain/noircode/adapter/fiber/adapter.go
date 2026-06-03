@@ -24,6 +24,7 @@ func New(f *fibercmp.Component, svc noircode.Service) *Adapter {
 	f.Register(func(r gf.Router) {
 		r.Post("/encode", a.handleEncode)
 		r.Post("/decode", a.handleDecode)
+		r.Post("/decode-url", a.handleDecodeURL)
 	})
 	return a
 }
@@ -96,6 +97,31 @@ func (a *Adapter) handleDecode(ctx gf.Ctx) error {
 		return mishap.Wrap(err, "read upload", mishap.WithCode(e.Validation))
 	}
 	res, err := a.svc.Decode(ctx.Context(), data)
+	if err != nil {
+		return err
+	}
+	return ctx.JSON(res)
+}
+
+type decodeURLReq struct {
+	URL string `json:"url"`
+}
+
+// handleDecodeURL godoc
+//
+//	@Summary	Decode a NoiR Code panel from a remote image URL
+//	@Tags		noircode
+//	@Accept		json
+//	@Produce	json
+//	@Param		body	body		decodeURLReq	true	"image url"
+//	@Success	200		{object}	model.DecodeResult
+//	@Router		/decode-url [post]
+func (a *Adapter) handleDecodeURL(ctx gf.Ctx) error {
+	var req decodeURLReq
+	if err := ctx.Bind().Body(&req); err != nil {
+		return mishap.Wrap(err, "bind body", mishap.WithCode(e.Validation))
+	}
+	res, err := a.svc.DecodeURL(ctx.Context(), req.URL)
 	if err != nil {
 		return err
 	}

@@ -38,4 +38,4 @@ env/prod/
 # Private draft article + its source assets (not for publication)
 docs/blog.md
 docs/img/
-service/python/scripts/make_og.py
+service/python/scripts/

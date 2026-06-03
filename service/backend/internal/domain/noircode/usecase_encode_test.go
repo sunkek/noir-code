@@ -25,9 +25,16 @@ func (f *fakeImaging) Decode(context.Context, []byte) (model.DecodeResult, error
 	return model.DecodeResult{}, nil
 }
 
+// fakeFetcher is an inert Fetcher for the encode tests (never exercised here).
+type fakeFetcher struct{}
+
+func (fakeFetcher) Fetch(context.Context, string) ([]byte, error) {
+	return nil, nil
+}
+
 func TestEncode_RejectsEmpty(t *testing.T) {
 	img := &fakeImaging{}
-	d := noircode.New(img)
+	d := noircode.New(img, fakeFetcher{})
 	if _, err := d.Encode(context.Background(), model.EncodeInput{Text: "  "}); err == nil {
 		t.Fatal("expected error for blank text")
 	}
@@ -38,7 +45,7 @@ func TestEncode_RejectsEmpty(t *testing.T) {
 
 func TestEncode_RejectsTooLong(t *testing.T) {
 	img := &fakeImaging{}
-	d := noircode.New(img)
+	d := noircode.New(img, fakeFetcher{})
 	if _, err := d.Encode(context.Background(), model.EncodeInput{Text: strings.Repeat("a", 200)}); err == nil {
 		t.Fatal("expected error for oversized text")
 	}
@@ -49,7 +56,7 @@ func TestEncode_RejectsTooLong(t *testing.T) {
 
 func TestEncode_PassesThroughToImaging(t *testing.T) {
 	img := &fakeImaging{}
-	d := noircode.New(img)
+	d := noircode.New(img, fakeFetcher{})
 	png, err := d.Encode(context.Background(), model.EncodeInput{Text: "hello", Style: true})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)

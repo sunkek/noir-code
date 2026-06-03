@@ -37,6 +37,14 @@ const docTemplate = `{
                 },
                 "type": "object"
             },
+            "internal_domain_noircode_adapter_fiber.decodeURLReq": {
+                "properties": {
+                    "url": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
             "internal_domain_noircode_adapter_fiber.encodeReq": {
                 "properties": {
                     "adaptive": {
@@ -106,6 +114,37 @@ const docTemplate = `{
                     }
                 },
                 "summary": "Decode a NoiR Code panel image to text",
+                "tags": [
+                    "noircode"
+                ]
+            }
+        },
+        "/decode-url": {
+            "post": {
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/internal_domain_noircode_adapter_fiber.decodeURLReq"
+                            }
+                        }
+                    },
+                    "description": "image url",
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/github_com_noircode_backend_internal_domain_noircode_model.DecodeResult"
+                                }
+                            }
+                        },
+                        "description": "OK"
+                    }
+                },
+                "summary": "Decode a NoiR Code panel from a remote image URL",
                 "tags": [
                     "noircode"
                 ]

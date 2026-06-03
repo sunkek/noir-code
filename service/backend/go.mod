@@ -11,7 +11,7 @@ require (
 	github.com/prometheus/client_golang v1.23.2
 	github.com/sunkek/mishap v1.1.0
 	github.com/sunkek/samsara v0.4.0
-	github.com/sunkek/samsara-components/fiber v0.1.1
+	github.com/sunkek/samsara-components/fiber v0.2.0
 	github.com/swaggo/swag/v2 v2.0.0-rc5
 )
 
