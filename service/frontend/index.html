@@ -49,20 +49,82 @@
         "offers": { "@type": "Offer", "price": "0" }
       }
     </script>
+    <style>
+      /* Critical styles for the static landing snapshot (before the SPA mounts
+         and for no-JS clients). The app's own CSS takes over on hydration. */
+      body {
+        margin: 0;
+        background: #050506;
+      }
+      .seo-hero {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 2.5rem 1.25rem;
+        font-family: system-ui, sans-serif;
+        color: #e8e6e1;
+        background: #050506;
+        line-height: 1.6;
+      }
+      .seo-hero h1 {
+        font-size: 2.2rem;
+        letter-spacing: 0.04em;
+        margin: 0 0 0.25rem;
+      }
+      .seo-tagline {
+        color: #9a9892;
+        font-style: italic;
+        margin-top: 0;
+      }
+      .seo-img {
+        width: 100%;
+        height: auto;
+        border: 1px solid #1c1c20;
+        margin: 1rem 0;
+      }
+      .seo-hero a {
+        color: #e10600;
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
-    <noscript>
-      <h1>NoiR Code</h1>
-      <p>Your message, hidden in the shadows of a nocturnal city of rain.</p>
-      <p>
-        NoiR Code is a QR-like visual encoder where the code <em>is</em> a noir
-        comic panel. It turns text into a scannable, rain-soaked halftone
-        cityscape, and decodes it back from an uploaded image or a live camera
-        scan. NoiR Code needs JavaScript enabled to encode and decode in your
-        browser.
-      </p>
-    </noscript>
+    <!--
+      The #root content below is a static, crawlable snapshot of the landing.
+      React's createRoot().render() in main.tsx replaces it on mount, so users
+      get the full SPA while search engines (and clients that do not run JS)
+      still see real content, a heading, and the hero image. Keep the pitch
+      here in sync with the app's slogan.
+    -->
+    <div id="root">
+      <main class="seo-hero">
+        <h1>NoiR Code</h1>
+        <p class="seo-tagline">Your message, hidden in the shadows of a nocturnal city of rain.</p>
+        <img
+          class="seo-img"
+          src="/og.png"
+          width="1200"
+          height="630"
+          alt="A NoiR Code panel: a halftone noir cityscape with a moon, made entirely of data cells."
+        />
+        <p>
+          <strong>NoiR Code</strong> is a QR-like visual encoder where the code
+          <em>is</em> a noir comic panel. It turns text into a scannable,
+          rain-soaked halftone cityscape — a low-resolution engraving of a city
+          whose cell centres carry the data — and decodes it back from an
+          uploaded image, a remote image URL, or a live camera scan.
+        </p>
+        <ul>
+          <li>Encode any short text or link into a unique noir panel.</li>
+          <li>Decode by upload, by image URL, or with your camera.</li>
+          <li>Reed–Solomon error correction survives glare, blur and creases.</li>
+          <li>Works from phone photos, screenshots and uneven lighting.</li>
+        </ul>
+        <p>
+          Open <strong>noir-code.suncake.xyz</strong> in a modern browser to
+          encode and decode interactively. Source on
+          <a href="https://github.com/sunkek/noir-code">GitHub</a>.
+        </p>
+      </main>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
