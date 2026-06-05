@@ -23,7 +23,9 @@ import numpy as np
 from noircode.channels import checksum_byte, deinterleave, symbols_to_codeword
 from noircode.config import Config, candidate_configs
 from noircode.decode.detect import detect_frames, rectify_with
-from noircode.decode.grid import sample_grid
+from collections.abc import Callable
+
+from noircode.decode.grid import GridSample, sample_grid, sample_grid_adaptive
 from noircode.decode.motifs import sample_channel_b
 from noircode.ecc import EccError, correct_codeword
 from noircode.geometry import layout
@@ -122,12 +124,16 @@ def _clahe_equalize(canonical: np.ndarray) -> np.ndarray:
     return out
 
 
-def _try_orientation(canonical: np.ndarray, cfg: Config) -> DecodeResult | None:
+def _try_orientation(
+    canonical: np.ndarray,
+    cfg: Config,
+    sampler: Callable[[np.ndarray, Config], GridSample] = sample_grid,
+) -> DecodeResult | None:
     """Attempt a decode of one oriented canonical panel; None if it doesn't parse."""
     panel = layout(cfg)
     gx0, gy0, gx1, gy1 = panel.grid_box
 
-    grid_sample = sample_grid(canonical[gy0:gy1, gx0:gx1], cfg)
+    grid_sample = sampler(canonical[gy0:gy1, gx0:gx1], cfg)
     placed, placed_erasures = symbols_to_codeword(grid_sample.symbols, cfg.bits_per_cell)
     codeword_bytes, logical_erasures = deinterleave(placed, placed_erasures)
     codeword = bytearray(codeword_bytes)
@@ -202,19 +208,26 @@ def decode(img: np.ndarray, cfg: Config | None = None) -> DecodeResult:
                 _normalize_levels(_flatfield_margin(base, ccfg)),
                 _clahe_equalize(base),
             )
+            # Two samplers per variant: the fixed-threshold sampler handles clean
+            # captures and the adaptive (k-means) sampler rescues screen photos where
+            # display gamma + camera tone-mapping shift the tonal levels off their
+            # encoded targets. Adaptive runs second because it has higher variance:
+            # on a clean panel the fixed quantizer is strictly more precise.
+            samplers = (sample_grid, sample_grid_adaptive)
             for canonical in variants:
-                for k in range(4):
-                    oriented = np.rot90(canonical, k)
-                    result = _try_orientation(oriented, ccfg)
-                    if result is not None:
-                        return DecodeResult(
-                            text=result.text,
-                            confidence=result.confidence,
-                            grid_erasures=result.grid_erasures,
-                            motif_erasures=result.motif_erasures,
-                            rotation=k * 90,
-                            cross_check=result.cross_check,
-                        )
+                for sampler in samplers:
+                    for k in range(4):
+                        oriented = np.rot90(canonical, k)
+                        result = _try_orientation(oriented, ccfg, sampler=sampler)
+                        if result is not None:
+                            return DecodeResult(
+                                text=result.text,
+                                confidence=result.confidence,
+                                grid_erasures=result.grid_erasures,
+                                motif_erasures=result.motif_erasures,
+                                rotation=k * 90,
+                                cross_check=result.cross_check,
+                            )
 
     return DecodeResult(
         None, 0.0, failed_stage="decode: no frame/version/orientation produced a valid frame"
