@@ -3,6 +3,12 @@
 A QR-like visual data encoder where the code **is** a noir comic panel. Encode text
 into a noir panel; decode a photographed/scanned panel back to text.
 
+Live: <https://noir-code.suncake.xyz>
+
+<p align="center">
+  <img src="docs/img/example-panel.png" alt="NoiR Code panel encoding https://noir-code.suncake.xyz" width="360">
+</p>
+
 ## Layout
 
 ```
