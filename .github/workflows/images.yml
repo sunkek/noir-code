@@ -3,6 +3,10 @@ name: build-images
 # Build the three service images and push them to GHCR. Packages inherit the
 # repo's visibility — make them public (or add an imagePullSecret in k3s) so the
 # cluster can pull. Images: ghcr.io/<owner>/noircode-{imaging,backend,frontend}.
+#
+# Path-filtered: each component's build only runs when its source tree (or this
+# workflow) changed. A tag push or manual dispatch forces all three to rebuild,
+# so release artifacts and ad-hoc reruns always carry a fresh image per service.
 on:
   push:
     branches: [main]
@@ -14,60 +18,132 @@ permissions:
   packages: write
 
 jobs:
-  build:
+  changes:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        include:
-          - component: imaging
-            context: service/python
-            dockerfile: service/python/.docker/Dockerfile
-          - component: backend
-            context: service/backend
-            dockerfile: service/backend/.docker/Dockerfile.prod
-          - component: frontend
-            context: service/frontend
-            dockerfile: service/frontend/.docker/Dockerfile.prod
+    outputs:
+      imaging: ${{ steps.filter.outputs.imaging }}
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
     steps:
       - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            imaging:
+              - 'service/python/**'
+              - '.github/workflows/images.yml'
+            backend:
+              - 'service/backend/**'
+              - '.github/workflows/images.yml'
+            frontend:
+              - 'service/frontend/**'
+              - '.github/workflows/images.yml'
 
+  build-imaging:
+    needs: changes
+    if: needs.changes.outputs.imaging == 'true' || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
       - name: Lowercase owner
         id: owner
         run: echo "name=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
-
       - uses: docker/setup-buildx-action@v3
-
       - uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
       - uses: docker/build-push-action@v6
         with:
-          context: ${{ matrix.context }}
-          file: ${{ matrix.dockerfile }}
+          context: service/python
+          file: service/python/.docker/Dockerfile
           push: true
           tags: |
-            ghcr.io/${{ steps.owner.outputs.name }}/noircode-${{ matrix.component }}:latest
-            ghcr.io/${{ steps.owner.outputs.name }}/noircode-${{ matrix.component }}:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+            ghcr.io/${{ steps.owner.outputs.name }}/noircode-imaging:latest
+            ghcr.io/${{ steps.owner.outputs.name }}/noircode-imaging:${{ github.sha }}
+          cache-from: type=gha,scope=imaging
+          cache-to: type=gha,mode=max,scope=imaging
 
-  # Continuous deploy: pin each Deployment to the freshly-built SHA and roll out.
-  # Requires repo secret KUBECONFIG_B64 = base64 of a kubeconfig whose current
-  # context targets the cluster (namespace noircode). Runs on main only.
+  build-backend:
+    needs: changes
+    if: needs.changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Lowercase owner
+        id: owner
+        run: echo "name=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: service/backend
+          file: service/backend/.docker/Dockerfile.prod
+          push: true
+          tags: |
+            ghcr.io/${{ steps.owner.outputs.name }}/noircode-backend:latest
+            ghcr.io/${{ steps.owner.outputs.name }}/noircode-backend:${{ github.sha }}
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend
+
+  build-frontend:
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Lowercase owner
+        id: owner
+        run: echo "name=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: service/frontend
+          file: service/frontend/.docker/Dockerfile.prod
+          push: true
+          tags: |
+            ghcr.io/${{ steps.owner.outputs.name }}/noircode-frontend:latest
+            ghcr.io/${{ steps.owner.outputs.name }}/noircode-frontend:${{ github.sha }}
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,mode=max,scope=frontend
+
+  # Continuous deploy: pin each Deployment to the freshly-built SHA and roll out,
+  # but only for services that were actually rebuilt this run. Requires repo
+  # secret KUBECONFIG_B64 = base64 of a kubeconfig whose current context targets
+  # the cluster (namespace noircode). Runs on main only. ``if: always()`` lets
+  # the deploy proceed even when some build jobs were skipped (no changes for
+  # that service); failed builds still block via the per-service guards below.
   deploy:
-    needs: build
-    if: github.ref == 'refs/heads/main'
+    needs: [changes, build-imaging, build-backend, build-frontend]
+    if: |
+      always() &&
+      github.ref == 'refs/heads/main' &&
+      needs.build-imaging.result != 'failure' &&
+      needs.build-backend.result != 'failure' &&
+      needs.build-frontend.result != 'failure'
     runs-on: ubuntu-latest
     concurrency: deploy-noircode # never overlap two rollouts
     env:
       KUBECONFIG_B64: ${{ secrets.KUBECONFIG_B64 }}
+      IMAGING_CHANGED: ${{ needs.changes.outputs.imaging }}
+      BACKEND_CHANGED: ${{ needs.changes.outputs.backend }}
+      FRONTEND_CHANGED: ${{ needs.changes.outputs.frontend }}
+      FORCE_ALL: ${{ github.event_name == 'workflow_dispatch' }}
     steps:
       - uses: azure/setup-kubectl@v4
 
-      - name: Roll out new images
+      - name: Roll out changed images
         run: |
           if [ -z "$KUBECONFIG_B64" ]; then
             echo "KUBECONFIG_B64 secret not set — skipping deploy."
@@ -77,9 +153,18 @@ jobs:
           echo "$KUBECONFIG_B64" | base64 -d > ~/.kube/config
           chmod 600 ~/.kube/config
           owner=${GITHUB_REPOSITORY_OWNER,,}
-          for c in imaging backend frontend; do
-            kubectl -n noircode set image "deployment/$c" \
-              "$c=ghcr.io/$owner/noircode-$c:${GITHUB_SHA}"
-          done
-          kubectl -n noircode rollout status \
-            deployment/imaging deployment/backend deployment/frontend --timeout=180s
+          to_roll=()
+          roll() {
+            local svc=$1
+            kubectl -n noircode set image "deployment/$svc" \
+              "$svc=ghcr.io/$owner/noircode-$svc:${GITHUB_SHA}"
+            to_roll+=("deployment/$svc")
+          }
+          if [ "$IMAGING_CHANGED" = "true" ] || [ "$FORCE_ALL" = "true" ]; then roll imaging; fi
+          if [ "$BACKEND_CHANGED" = "true" ] || [ "$FORCE_ALL" = "true" ]; then roll backend; fi
+          if [ "$FRONTEND_CHANGED" = "true" ] || [ "$FORCE_ALL" = "true" ]; then roll frontend; fi
+          if [ ${#to_roll[@]} -eq 0 ]; then
+            echo "No services changed; nothing to roll out."
+            exit 0
+          fi
+          kubectl -n noircode rollout status "${to_roll[@]}" --timeout=180s
