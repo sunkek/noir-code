@@ -15,6 +15,7 @@ Full dual-channel pipeline:
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 
 import cv2
@@ -23,8 +24,6 @@ import numpy as np
 from noircode.channels import checksum_byte, deinterleave, symbols_to_codeword
 from noircode.config import Config, candidate_configs
 from noircode.decode.detect import detect_frames, rectify_with
-from collections.abc import Callable
-
 from noircode.decode.grid import GridSample, sample_grid, sample_grid_adaptive
 from noircode.decode.motifs import sample_channel_b
 from noircode.ecc import EccError, correct_codeword
