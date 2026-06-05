@@ -100,7 +100,14 @@ def sample_grid_adaptive(img: np.ndarray, cfg: Config) -> GridSample:
     """
     means = compute_cell_means(img, cfg).reshape(-1, 1)
     crit = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 50, 0.5)
-    _, labels, centers = cv2.kmeans(means, cfg.tonal_levels, None, crit, 10, cv2.KMEANS_PP_CENTERS)
+    _, labels, centers = cv2.kmeans(
+        means,
+        cfg.tonal_levels,
+        np.empty((cfg.grid_cells, 1), dtype=np.int32),
+        crit,
+        10,
+        cv2.KMEANS_PP_CENTERS,
+    )
     centers_flat = centers.flatten()
     order = np.argsort(centers_flat)
     sorted_centers = centers_flat[order]
