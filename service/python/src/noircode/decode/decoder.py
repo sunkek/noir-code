@@ -17,6 +17,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+import cv2
 import numpy as np
 
 from noircode.channels import checksum_byte, deinterleave, symbols_to_codeword
@@ -106,6 +107,21 @@ def _flatfield_margin(canonical: np.ndarray, cfg: Config) -> np.ndarray:
     return out
 
 
+def _clahe_equalize(canonical: np.ndarray) -> np.ndarray:
+    """Local-contrast rescue for screen captures.
+
+    A photo of a monitor often compresses the tonal range non-uniformly: one region
+    holds wide contrast, another is washed out by reflection or gamma rolloff. Global
+    percentile stretching can't recover the washed region without crushing the rest.
+    CLAHE re-spreads contrast inside small tiles, pulling each tile's tonal levels
+    back onto their guard-band targets. On a clean panel this is near-identity since
+    each tile is already full-range.
+    """
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    out: np.ndarray = clahe.apply(canonical)
+    return out
+
+
 def _try_orientation(canonical: np.ndarray, cfg: Config) -> DecodeResult | None:
     """Attempt a decode of one oriented canonical panel; None if it doesn't parse."""
     panel = layout(cfg)
@@ -177,9 +193,16 @@ def decode(img: np.ndarray, cfg: Config | None = None) -> DecodeResult:
         for ccfg in candidate_configs(cfg):
             base = _normalize_levels(rectify_with(img, ccfg, corners))
             # Try the plain normalized panel first (handles clean/mild capture), then a
-            # margin-flat-fielded variant that rescues a strong lighting gradient. The CRC
-            # accepts whichever is valid, so the flat-field can only help, never regress.
-            for canonical in (base, _normalize_levels(_flatfield_margin(base, ccfg))):
+            # margin-flat-fielded variant that rescues a strong lighting gradient, then a
+            # CLAHE-equalized variant that rescues a screen capture's uneven local
+            # contrast (gamma rolloff, monitor reflections). CRC accepts whichever
+            # decodes, so additional variants only help, never regress.
+            variants = (
+                base,
+                _normalize_levels(_flatfield_margin(base, ccfg)),
+                _clahe_equalize(base),
+            )
+            for canonical in variants:
                 for k in range(4):
                     oriented = np.rot90(canonical, k)
                     result = _try_orientation(oriented, ccfg)

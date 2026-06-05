@@ -53,13 +53,9 @@ def sample_grid(img: np.ndarray, cfg: Config) -> GridSample:
     cell_h = h / cfg.grid_rows
     cell_w = w / cfg.grid_cols
 
-    # Blur kernel scaled to the inner sample window: wide enough to average hatch lines
-    # (whose period is a few pixels of the cell) but a fraction of the cell so the
-    # surrounding halftone artwork does not bleed into the sampled center. Capped by
-    # the inner patch size; floor of 3 keeps clean panels behaving like before.
-    inner_min = max(1.0, min(cell_h, cell_w) * (1.0 - 2.0 * cfg.sample_inset))
-    k = max(3, int(inner_min * 0.5) | 1)
-    img = cv2.blur(img, (k, k))
+    # A light blur averages the hatch lines without pulling the surrounding halftone
+    # artwork into the sampled center (a big kernel would).
+    img = cv2.blur(img, (3, 3))
 
     inset_h = cell_h * cfg.sample_inset
     inset_w = cell_w * cfg.sample_inset
@@ -73,10 +69,11 @@ def sample_grid(img: np.ndarray, cfg: Config) -> GridSample:
         x0 = int(round(c * cell_w + inset_w))
         x1 = int(round((c + 1) * cell_w - inset_w))
         patch = img[max(y0, 0) : max(y1, y0 + 1), max(x0, 0) : max(x1, x0 + 1)]
-        # Median is robust to residual hatch peaks and JPEG ringing — a single bright
-        # line crossing the inner patch can pull the mean off the level target,
-        # whereas the median tracks the dominant tone.
-        sym = quantize_gray(float(np.median(patch)), cfg.tonal_levels, cfg.tonal_margin)
+        # The encoder pins each cell's *mean* gray to its level target (the
+        # hatched-data compensation depends on that), so the decoder must read the
+        # mean too — a median would jump to one of the bimodal ink/background tones
+        # and miss the level.
+        sym = quantize_gray(float(np.mean(patch)), cfg.tonal_levels, cfg.tonal_margin)
         symbols.append(sym)
         if sym is None:
             erasures.append(idx)
