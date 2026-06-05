@@ -28,6 +28,8 @@ export type Dict = {
   startingCamera: string
   flip: string
   torch: string
+  tapToFocus: string
+  holdSteady: string
   decoding: string
   couldNotDecode: (stage: string | null) => string
   confidence: string
@@ -63,6 +65,8 @@ const en: Dict = {
   startingCamera: 'Starting camera…',
   flip: 'Flip',
   torch: 'Torch',
+  tapToFocus: 'Tap to focus',
+  holdSteady: 'Hold steady…',
   decoding: 'Decoding…',
   couldNotDecode: (stage) => `Could not decode: ${stage}`,
   confidence: 'confidence',
@@ -98,6 +102,8 @@ const ru: Dict = {
   startingCamera: 'Запуск камеры…',
   flip: 'Перевернуть',
   torch: 'Фонарик',
+  tapToFocus: 'Нажмите для фокуса',
+  holdSteady: 'Держите ровно…',
   decoding: 'Декодирую…',
   couldNotDecode: (stage) => `Не удалось декодировать: ${stage}`,
   confidence: 'достоверность',

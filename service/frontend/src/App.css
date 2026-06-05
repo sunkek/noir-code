@@ -256,13 +256,61 @@ button:disabled {
   flex-direction: column;
   gap: 0.6rem;
 }
-.scanner video {
+.scanner-stage {
+  position: relative;
   width: 100%;
-  background: #000;
+  aspect-ratio: 1 / 1;
   border: 1px solid var(--line);
   border-top: 3px solid var(--accent);
-  aspect-ratio: 1 / 1;
+  background: #000;
+  overflow: hidden;
+}
+.scanner-stage video {
+  width: 100%;
+  height: 100%;
+  display: block;
   object-fit: cover;
+  cursor: crosshair;
+}
+/* Alignment guide: a 78%-square hole over the video (matches GUIDE_FRACTION in
+   App.tsx so the on-screen box and the ROI the decoder sees coincide). The mask
+   is a translucent overlay that's "punched" by the centered guide using a
+   massive inset box-shadow on the inner element. */
+.scanner-guide {
+  position: absolute;
+  top: 11%;
+  left: 11%;
+  width: 78%;
+  height: 78%;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+}
+.scanner-guide .g {
+  position: absolute;
+  width: 18%;
+  height: 18%;
+  border: 3px solid var(--accent);
+}
+.scanner-guide .g.tl { top: 0; left: 0; border-right: 0; border-bottom: 0; }
+.scanner-guide .g.tr { top: 0; right: 0; border-left: 0; border-bottom: 0; }
+.scanner-guide .g.bl { bottom: 0; left: 0; border-right: 0; border-top: 0; }
+.scanner-guide .g.br { bottom: 0; right: 0; border-left: 0; border-top: 0; }
+.scanner-stage.flash::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 200, 80, 0.35);
+  animation: scan-flash 500ms ease-out forwards;
+  pointer-events: none;
+}
+@keyframes scan-flash {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+.cam-tip {
+  display: block;
+  text-align: center;
+  opacity: 0.7;
 }
 .cam-controls {
   display: flex;

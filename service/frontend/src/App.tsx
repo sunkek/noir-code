@@ -101,12 +101,43 @@ function Encoder({ t }: { t: Dict }) {
 }
 
 // POST an image blob to the decode endpoint. Throws on HTTP error.
-async function postDecode(blob: Blob): Promise<DecodeResult> {
+async function postDecode(blob: Blob, filename = 'capture.jpg'): Promise<DecodeResult> {
   const fd = new FormData()
-  fd.append('image', blob, 'capture.jpg')
+  fd.append('image', blob, filename)
   const res = await fetch(`${API}/decode`, { method: 'POST', body: fd })
   if (!res.ok) throw new Error(await errorDetail(res))
   return (await res.json()) as DecodeResult
+}
+
+// Fraction of the smaller video side covered by the alignment guide. Matches the CSS
+// `.scanner-guide` size so the ROI the decoder sees lines up with what the user aims.
+const GUIDE_FRACTION = 0.78
+
+// Variance-of-Laplacian sharpness estimate on a downsampled ROI. Coarse but fast — a
+// blurry frame scores well under ~50, a sharp one well above. Sub-threshold frames
+// are skipped so the user isn't told "no panel" when really it's just motion blur.
+const SHARPNESS_MIN = 60
+
+function roiSharpness(data: Uint8ClampedArray, w: number, h: number): number {
+  let sum = 0
+  let sum2 = 0
+  let n = 0
+  const step = 4
+  const row = w * 4
+  for (let y = step; y < h - step; y += step) {
+    for (let x = step; x < w - step; x += step) {
+      const i = (y * w + x) * 4
+      // Luma approximation, R channel as proxy (cheap, good enough for sharpness).
+      const c = data[i]
+      const lap = 4 * c - data[i - 4] - data[i + 4] - data[i - row] - data[i + row]
+      sum += lap
+      sum2 += lap * lap
+      n++
+    }
+  }
+  if (n === 0) return 0
+  const mean = sum / n
+  return sum2 / n - mean * mean
 }
 
 // POST a remote image URL; the gateway fetches it (with egress safeguards) and
@@ -147,6 +178,8 @@ function Decoder({ t }: { t: Dict }) {
   const [facing, setFacing] = useState<'environment' | 'user'>('environment')
   const [torchSupported, setTorchSupported] = useState(false)
   const [torchOn, setTorchOn] = useState(false)
+  const [steady, setSteady] = useState(true)
+  const [flash, setFlash] = useState(false)
 
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -217,8 +250,15 @@ function Decoder({ t }: { t: Dict }) {
     setErr(null)
     setResult(null)
     navigator.mediaDevices
-      .getUserMedia({ video: { facingMode: facing }, audio: false })
-      .then((stream) => {
+      .getUserMedia({
+        video: {
+          facingMode: facing,
+          width: { ideal: 1920 },
+          height: { ideal: 1920 },
+        },
+        audio: false,
+      })
+      .then(async (stream) => {
         if (cancelled) {
           stream.getTracks().forEach((tr) => tr.stop())
           return
@@ -228,8 +268,29 @@ function Decoder({ t }: { t: Dict }) {
           videoRef.current.srcObject = stream
         }
         const track = stream.getVideoTracks()[0]
-        const caps = track?.getCapabilities?.() as { torch?: boolean } | undefined
-        setTorchSupported(Boolean(caps && 'torch' in caps))
+        const caps = (track?.getCapabilities?.() ?? {}) as {
+          torch?: boolean
+          focusMode?: string[]
+          whiteBalanceMode?: string[]
+        }
+        setTorchSupported('torch' in caps)
+        // Ask the device for continuous focus + auto white balance when supported. Both
+        // are non-standard advanced constraints — wrap in try/catch since unsupported
+        // values throw on some browsers rather than degrading silently.
+        const advanced: MediaTrackConstraintSet[] = []
+        if (caps.focusMode?.includes('continuous')) {
+          advanced.push({ focusMode: 'continuous' } as MediaTrackConstraintSet)
+        }
+        if (caps.whiteBalanceMode?.includes('continuous')) {
+          advanced.push({ whiteBalanceMode: 'continuous' } as MediaTrackConstraintSet)
+        }
+        if (advanced.length > 0) {
+          try {
+            await track.applyConstraints({ advanced } as MediaTrackConstraints)
+          } catch {
+            /* unsupported on this device — fall through with defaults */
+          }
+        }
         setScanning(true)
       })
       .catch((e) => {
@@ -241,7 +302,45 @@ function Decoder({ t }: { t: Dict }) {
     }
   }, [mode, facing, stopCamera, t])
 
-  // Grab a frame every ~400ms and try to decode it; stop on success.
+  // Tap-to-focus: ask the device to focus + meter on the tapped point. Falls back
+  // silently when the camera doesn't support pointsOfInterest. The video is shown
+  // with `object-fit: cover` over a 1:1 box, so the displayed region is the central
+  // square of the native frame — map the tap back into native normalized coords.
+  const tapFocus = useCallback(async (e: React.MouseEvent<HTMLVideoElement>) => {
+    const video = e.currentTarget
+    const track = streamRef.current?.getVideoTracks()[0]
+    if (!track) return
+    const rect = video.getBoundingClientRect()
+    const u = (e.clientX - rect.left) / rect.width
+    const v = (e.clientY - rect.top) / rect.height
+    const vw = video.videoWidth
+    const vh = video.videoHeight
+    if (!vw || !vh) return
+    let x: number
+    let y: number
+    if (vw >= vh) {
+      const crop = vh
+      const cropX0 = (vw - vh) / 2
+      x = (cropX0 + u * crop) / vw
+      y = v
+    } else {
+      const crop = vw
+      const cropY0 = (vh - vw) / 2
+      x = u
+      y = (cropY0 + v * crop) / vh
+    }
+    try {
+      await track.applyConstraints({
+        advanced: [
+          { pointsOfInterest: [{ x, y }], focusMode: 'single-shot' },
+        ] as unknown as MediaTrackConstraintSet[],
+      } as MediaTrackConstraints)
+    } catch {
+      /* unsupported — ignore */
+    }
+  }, [])
+
+  // Grab the alignment-guide ROI every ~400ms, gate on sharpness, send as PNG.
   useEffect(() => {
     if (!scanning) return
     let active = true
@@ -252,13 +351,33 @@ function Decoder({ t }: { t: Dict }) {
       if (inFlight || !active || !video || !canvas || video.readyState < 2) return
       inFlight = true
       try {
-        canvas.width = video.videoWidth
-        canvas.height = video.videoHeight
-        canvas.getContext('2d')?.drawImage(video, 0, 0)
-        const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, 'image/jpeg', 0.92))
+        const vw = video.videoWidth
+        const vh = video.videoHeight
+        // Crop a centered square ROI matching the on-screen guide: smaller payload,
+        // fewer distractors for the frame detector, no background clutter.
+        const side = Math.floor(Math.min(vw, vh) * GUIDE_FRACTION)
+        const sx = Math.floor((vw - side) / 2)
+        const sy = Math.floor((vh - side) / 2)
+        canvas.width = side
+        canvas.height = side
+        const ctx = canvas.getContext('2d', { willReadFrequently: true })
+        if (!ctx) return
+        ctx.drawImage(video, sx, sy, side, side, 0, 0, side, side)
+        // Cheap motion-blur gate: variance-of-Laplacian on the ROI. Strided inside
+        // roiSharpness so cost stays bounded at any capture resolution.
+        const probe = ctx.getImageData(0, 0, side, side)
+        const sharp = roiSharpness(probe.data, side, side)
+        const ok = sharp >= SHARPNESS_MIN
+        if (active) setSteady(ok)
+        if (!ok) return
+        // PNG is lossless — JPEG ringing on hatched data was killing decodes. Trade
+        // ~5x bandwidth at this cadence for a much higher success rate.
+        const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, 'image/png'))
         if (!active || !blob) return
-        const res = await postDecode(blob)
+        const res = await postDecode(blob, 'capture.png')
         if (active && res.ok) {
+          setFlash(true)
+          setTimeout(() => setFlash(false), 500)
           setResult(res)
           stopCamera()
         }
@@ -303,10 +422,20 @@ function Decoder({ t }: { t: Dict }) {
 
       {mode === 'camera' && (
         <div className="scanner">
-          <video ref={videoRef} autoPlay playsInline muted />
+          <div className={`scanner-stage${flash ? ' flash' : ''}`}>
+            <video ref={videoRef} autoPlay playsInline muted onClick={tapFocus} />
+            <div className="scanner-guide" aria-hidden>
+              <span className="g tl" />
+              <span className="g tr" />
+              <span className="g bl" />
+              <span className="g br" />
+            </div>
+          </div>
           <canvas ref={canvasRef} hidden />
           <div className="cam-controls">
-            <span className="hint">{scanning ? t.pointAtPanel : t.startingCamera}</span>
+            <span className="hint">
+              {!scanning ? t.startingCamera : steady ? t.pointAtPanel : t.holdSteady}
+            </span>
             <div className="cam-buttons">
               {torchSupported && (
                 <button className={torchOn ? 'tab active' : 'tab'} onClick={toggleTorch}>
@@ -321,6 +450,7 @@ function Decoder({ t }: { t: Dict }) {
               </button>
             </div>
           </div>
+          <span className="hint cam-tip">{t.tapToFocus}</span>
         </div>
       )}
 
