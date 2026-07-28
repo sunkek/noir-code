@@ -226,6 +226,11 @@ button:disabled {
 .site-footer a:hover {
   color: var(--accent);
 }
+.foot-sep {
+  color: var(--muted);
+  font-size: 0.72rem;
+  margin: 0 0.6rem;
+}
 
 .url-input {
   display: flex;

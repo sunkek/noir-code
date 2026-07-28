@@ -521,6 +521,10 @@ export default function App() {
         <a href="https://github.com/sunkek/noir-code" target="_blank" rel="noopener noreferrer">
           {t.sourceCode}
         </a>
+        <span className="foot-sep" aria-hidden="true">·</span>
+        <a href="https://suncake.xyz/" target="_blank" rel="noopener noreferrer">
+          {t.madeBy}
+        </a>
       </footer>
     </main>
   )

@@ -19,6 +19,7 @@ export type Dict = {
   encoding: string
   downloadPng: string
   sourceCode: string
+  madeBy: string
   upload: string
   scanCamera: string
   fromUrl: string
@@ -56,6 +57,7 @@ const en: Dict = {
   encoding: 'Encoding…',
   downloadPng: 'Download PNG',
   sourceCode: 'Source code ↗',
+  madeBy: 'suncake.xyz ↗',
   upload: 'Upload',
   scanCamera: 'Scan camera',
   fromUrl: 'From URL',
@@ -93,6 +95,7 @@ const ru: Dict = {
   encoding: 'Кодирую…',
   downloadPng: 'Скачать PNG',
   sourceCode: 'Исходный код ↗',
+  madeBy: 'suncake.xyz ↗',
   upload: 'Загрузить',
   scanCamera: 'Сканировать',
   fromUrl: 'По ссылке',
