@@ -16,7 +16,7 @@ dependencies = [
 # Imaging sidecar: a thin HTTP service the Go gateway calls for encode/decode.
 api = [
     "fastapi>=0.115",
-    "uvicorn[standard]>=0.30",
+    "uvicorn[standard]>=0.52.3",
     "python-multipart>=0.0.9",
 ]
 
