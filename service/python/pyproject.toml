@@ -3,13 +3,9 @@ name = "noircode"
 version = "0.1.0"
 description = "NoiR Code: visual data encoding as a noir comic panel (reference implementation)"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = [
-    # Capped below 2.5: numpy 2.5 requires Python >= 3.12, so allowing it makes
-    # uv resolve a split (2.4.x on 3.11, 2.5.x on 3.12+) and its stubs then use
-    # PEP 695 `type` statements that mypy rejects under python_version = "3.11".
-    # Lift the cap together with requires-python if 3.11 support is dropped.
-    "numpy>=1.26,<2.5",
+    "numpy>=1.26",
     "pillow>=10.0",
     "opencv-python>=4.9",
     "reedsolo>=1.7",
@@ -45,7 +41,7 @@ packages = ["src/noircode"]
 [tool.ruff]
 src = ["src", "tests"]
 line-length = 100
-target-version = "py311"
+target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
@@ -55,7 +51,7 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 extend-immutable-calls = ["fastapi.File", "fastapi.Depends", "fastapi.Query", "fastapi.Form"]
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.12"
 strict = true
 files = ["src", "tests"]
 
