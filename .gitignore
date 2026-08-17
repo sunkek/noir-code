@@ -39,3 +39,12 @@ env/prod/
 docs/blog.md
 docs/img/
 service/python/scripts/
+
+# SSH keys must never be committed. The previous deploy keypair
+# (service/python/lenforma_deploy) was removed and rotated; these patterns stop
+# a replacement from being added back by accident.
+*.pem
+id_rsa
+id_ed25519
+*_deploy
+*_deploy.pub
