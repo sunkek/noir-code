@@ -15,6 +15,14 @@ updates:
     groups:
       npm-deps:
         patterns: ["*"]
+    ignore:
+      # TypeScript 7 has no working consumer yet: typescript-eslint 8.67.0 (the
+      # current release) peer-requires `typescript >=4.8.4 <6.1.0`, so a 7.x bump
+      # produces an unresolvable tree — `npm ci` fails with ERESOLVE and CI's
+      # frontend job goes red. Drop this ignore once typescript-eslint widens the
+      # range; minor and patch updates inside 6.x still come through.
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
 
   # The imaging sidecar is a uv project (pyproject.toml + uv.lock).
   - package-ecosystem: uv
