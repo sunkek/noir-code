@@ -1,6 +1,6 @@
 # NoiR Code imaging sidecar: the FastAPI wrapper around the encode/decode core.
 # OpenCV (opencv-python) needs libGL + glib at runtime, hence the apt libs.
-FROM python:3.12-slim AS prod
+FROM python:3.14-slim AS prod
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends libgl1 libglib2.0-0 \
