@@ -6,7 +6,7 @@ import path from 'node:path'
 // Resolve backend port from env/local/api.env so `npm run dev` works without
 // the Makefile. Falls back to process.env, then 8000.
 function backendPortFromEnvFile(): string | undefined {
-  const envPath = path.resolve(__dirname, '../../env/local/api.env')
+  const envPath = path.resolve(import.meta.dirname, '../../env/local/api.env')
   try {
     const text = fs.readFileSync(envPath, 'utf8')
     const m = text.match(/^\s*(?:export\s+)?NOIRCODE_API_FIBER_PORT\s*=\s*"?([^"\s]+)"?\s*$/m)

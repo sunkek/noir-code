@@ -5,7 +5,11 @@ description = "NoiR Code: visual data encoding as a noir comic panel (reference 
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "numpy>=1.26",
+    # Capped below 2.5: numpy 2.5 requires Python >= 3.12, so allowing it makes
+    # uv resolve a split (2.4.x on 3.11, 2.5.x on 3.12+) and its stubs then use
+    # PEP 695 `type` statements that mypy rejects under python_version = "3.11".
+    # Lift the cap together with requires-python if 3.11 support is dropped.
+    "numpy>=1.26,<2.5",
     "pillow>=10.0",
     "opencv-python>=4.9",
     "reedsolo>=1.7",

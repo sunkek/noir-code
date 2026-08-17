@@ -1,0 +1,47 @@
+version: 2
+updates:
+  - package-ecosystem: gomod
+    directory: /service/backend
+    schedule:
+      interval: weekly
+    groups:
+      go-deps:
+        patterns: ["*"]
+
+  - package-ecosystem: npm
+    directory: /service/frontend
+    schedule:
+      interval: weekly
+    groups:
+      npm-deps:
+        patterns: ["*"]
+
+  # The imaging sidecar is a uv project (pyproject.toml + uv.lock).
+  - package-ecosystem: uv
+    directory: /service/python
+    schedule:
+      interval: weekly
+    groups:
+      python-deps:
+        patterns: ["*"]
+
+  # Both workflows pin actions by commit SHA; these PRs move the SHA and keep
+  # the trailing `# vX.Y.Z` comment in step.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+
+  - package-ecosystem: docker
+    directories:
+      - /service/backend/.docker
+      - /service/frontend/.docker
+      - /service/python/.docker
+    schedule:
+      interval: weekly
+    groups:
+      docker-images:
+        patterns: ["*"]
