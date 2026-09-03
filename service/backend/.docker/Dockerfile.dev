@@ -1,4 +1,4 @@
-FROM golang:1.26.6-alpine AS dev
+FROM golang:1.27.0-alpine AS dev
 RUN apk --no-cache add ca-certificates curl && \
     go install github.com/air-verse/air@latest && \
     go install github.com/swaggo/swag/v2/cmd/swag@latest
