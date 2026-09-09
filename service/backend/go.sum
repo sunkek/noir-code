@@ -75,8 +75,8 @@ github.com/shamaton/msgpack/v3 v3.2.0 h1:1q2Ms+MWmuRju+PuDMSFDB7p7621npeX4zprJN5
 github.com/shamaton/msgpack/v3 v3.2.0/go.mod h1:sgBYvEiyz8JR1NC3yGRoPVME9xXovpnh3l/plW1nfRo=
 github.com/stretchr/testify v1.12.1 h1:EuwCh5fleGS7H32xRwO3wRGT7DxrDhLAT6FF8MpWDWE=
 github.com/stretchr/testify v1.12.1/go.mod h1:MDEgiDPPsNp5cuIrHPPCyornHKgEVbtFUmoNlxoYthg=
-github.com/sunkek/mishap v1.1.0 h1:iBPvpdBIN4xuOnqg8A19XapH+o5FCoUawq4V+W6NnBo=
-github.com/sunkek/mishap v1.1.0/go.mod h1:QDz6spPucTSWyaOoH4iwyKsDy5sS1pAELbcGV4LXHCY=
+github.com/sunkek/mishap v1.2.0 h1:Whp0Bkxrc2dqEmWE7sIByR3p4KzvIWTPVOKM3n21eRU=
+github.com/sunkek/mishap v1.2.0/go.mod h1:QDz6spPucTSWyaOoH4iwyKsDy5sS1pAELbcGV4LXHCY=
 github.com/sunkek/samsara v0.7.0 h1:26iFb29yX0HrOEVfGYhTKrIS6K2c9CJgvffVBthosyg=
 github.com/sunkek/samsara v0.7.0/go.mod h1:LacRepaePV/jW3xz9+cZ8pHrtVvnkIQLr/yEc0LdsQY=
 github.com/sunkek/samsara-components/fiber v0.6.1 h1:M3tjY3G3TmVmGsRWuTYkEpXKOBWYkq1++KGS2Tcx54E=

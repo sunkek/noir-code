@@ -11,7 +11,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/prometheus/client_golang v1.24.1
-	github.com/sunkek/mishap v1.1.0
+	github.com/sunkek/mishap v1.2.0
 	github.com/sunkek/samsara v0.7.0
 	github.com/sunkek/samsara-components/fiber v0.6.1
 	github.com/swaggo/swag/v2 v2.0.0-rc5
