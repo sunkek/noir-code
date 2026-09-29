@@ -172,7 +172,6 @@ function Decoder({ t }: { t: Dict }) {
   const [result, setResult] = useState<DecodeResult | null>(null)
   const [err, setErr] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
-  const [preview, setPreview] = useState<string | null>(null)
   const [url, setUrl] = useState('')
   const [scanning, setScanning] = useState(false)
   const [facing, setFacing] = useState<'environment' | 'user'>('environment')
@@ -210,10 +209,6 @@ function Decoder({ t }: { t: Dict }) {
     setErr(null)
     setResult(null)
     setBusy(true)
-    setPreview((prev) => {
-      if (prev) URL.revokeObjectURL(prev)
-      return URL.createObjectURL(file)
-    })
     try {
       setResult(await postDecode(file))
     } catch (e) {
@@ -239,10 +234,6 @@ function Decoder({ t }: { t: Dict }) {
     }
     setErr(null)
     setResult(null)
-    setPreview((prev) => {
-      if (prev) URL.revokeObjectURL(prev)
-      return null
-    })
     setBusy(true)
     try {
       setResult(await postDecodeURL(safeURL.href))
@@ -488,11 +479,6 @@ function Decoder({ t }: { t: Dict }) {
 
       {busy && <p>{t.decoding}</p>}
       {err && <p className="err">{err}</p>}
-      {mode === 'upload' && preview && (
-        <div className="result">
-          <img src={preview} alt="uploaded panel" />
-        </div>
-      )}
       {result && <ResultView result={result} t={t} />}
     </section>
   )
