@@ -239,7 +239,10 @@ function Decoder({ t }: { t: Dict }) {
     }
     setErr(null)
     setResult(null)
-    setPreview(safeURL.href)
+    setPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev)
+      return null
+    })
     setBusy(true)
     try {
       setResult(await postDecodeURL(safeURL.href))
@@ -485,7 +488,7 @@ function Decoder({ t }: { t: Dict }) {
 
       {busy && <p>{t.decoding}</p>}
       {err && <p className="err">{err}</p>}
-      {(mode === 'upload' || mode === 'url') && preview && (
+      {mode === 'upload' && preview && (
         <div className="result">
           <img src={preview} alt="uploaded panel" />
         </div>
