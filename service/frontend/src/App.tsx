@@ -226,12 +226,23 @@ function Decoder({ t }: { t: Dict }) {
   async function decodeUrl() {
     const target = url.trim()
     if (!target) return
+    let safeURL: URL
+    try {
+      safeURL = new URL(target)
+    } catch {
+      setErr(t.invalidUrl)
+      return
+    }
+    if (safeURL.protocol !== 'http:' && safeURL.protocol !== 'https:') {
+      setErr(t.invalidUrl)
+      return
+    }
     setErr(null)
     setResult(null)
-    setPreview(target)
+    setPreview(safeURL.href)
     setBusy(true)
     try {
-      setResult(await postDecodeURL(target))
+      setResult(await postDecodeURL(safeURL.href))
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e))
     } finally {

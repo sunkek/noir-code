@@ -24,6 +24,7 @@ export type Dict = {
   scanCamera: string
   fromUrl: string
   urlPlaceholder: string
+  invalidUrl: string
   decodeUrlBtn: string
   pointAtPanel: string
   startingCamera: string
@@ -62,6 +63,7 @@ const en: Dict = {
   scanCamera: 'Scan camera',
   fromUrl: 'From URL',
   urlPlaceholder: 'https://example.com/panel.png',
+  invalidUrl: 'Enter a valid HTTP or HTTPS URL',
   decodeUrlBtn: 'Decode',
   pointAtPanel: 'Point at a panel…',
   startingCamera: 'Starting camera…',
@@ -100,6 +102,7 @@ const ru: Dict = {
   scanCamera: 'Сканировать',
   fromUrl: 'По ссылке',
   urlPlaceholder: 'https://example.com/panel.png',
+  invalidUrl: 'Введите корректный URL с HTTP или HTTPS',
   decodeUrlBtn: 'Декодировать',
   pointAtPanel: 'Наведите на панель…',
   startingCamera: 'Запуск камеры…',
