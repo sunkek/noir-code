@@ -1,0 +1,87 @@
+/* Extra rules for the static content pages (how-it-works.html and its ru/
+   twin). They load App.css first, so the header, footer, width and panels are
+   the app's own; this file only adds what running text needs. */
+
+/* The header brand is a link home rather than the app's <h1>; the page's own
+   title is the <h1>. */
+header .brand {
+  display: inline-block;
+  color: var(--paper);
+  text-decoration: none;
+}
+
+/* The language switch is links here, not buttons, so give them the button
+   metrics .tab gets from the base button rule in the app. */
+a.tab {
+  display: inline-block;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.page-title {
+  font-size: 1.6rem;
+  letter-spacing: 0.02em;
+  margin: 0 0 1.5rem;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.prose {
+  line-height: 1.65;
+}
+.prose p,
+.prose li {
+  color: var(--paper);
+}
+.prose a {
+  color: var(--accent);
+}
+.prose ol,
+.prose ul {
+  padding-left: 1.25rem;
+}
+.prose li {
+  margin: 0.35rem 0;
+}
+.prose h3 {
+  font-size: 1rem;
+  margin: 1.5rem 0 0.25rem;
+}
+.prose h3:first-of-type {
+  margin-top: 0;
+}
+.prose img {
+  display: block;
+  width: 100%;
+  max-width: 600px;
+  height: auto;
+  border: 1px solid var(--line);
+  margin: 1rem 0 0;
+}
+
+/* The noir line that opens each section; the plain explanation follows. */
+.lead {
+  color: var(--muted) !important;
+  font-style: italic;
+  margin-top: 0;
+}
+
+.cta {
+  display: inline-block;
+  margin-top: 1.25rem;
+  background: var(--accent);
+  color: #fff;
+  padding: 0.7rem 1.6rem;
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+.cta:hover {
+  background: #ff1a0d;
+}

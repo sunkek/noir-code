@@ -14,6 +14,12 @@
   border-radius: 0 !important;
 }
 
+/* Reserve the scrollbar's width on every page, so the centred column does not
+   jump sideways between the short app page and the long how-it-works page. */
+html {
+  scrollbar-gutter: stable;
+}
+
 body {
   margin: 0;
   background: var(--ink);
@@ -44,7 +50,8 @@ header {
   gap: 0;
 }
 
-header h1 {
+header h1,
+header .brand {
   font-size: 3rem;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -208,6 +215,28 @@ button:disabled {
   background: var(--accent);
   color: #fff;
   border-color: var(--accent);
+}
+
+.about {
+  margin-top: 1.25rem;
+  line-height: 1.65;
+}
+.about p,
+.about ul {
+  margin: 0 0 0.9rem;
+}
+.about ul {
+  padding-left: 1.25rem;
+}
+.about li {
+  margin: 0.3rem 0;
+}
+.about .about-lead {
+  color: var(--muted);
+  font-style: italic;
+}
+.about a {
+  color: var(--accent);
 }
 
 .site-footer {

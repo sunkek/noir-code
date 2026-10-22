@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#000000" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+
+    <title>How NoiR Code works — a QR code drawn as a noir comic panel</title>
+    <meta
+      name="description"
+      content="How NoiR Code hides a message inside a noir city scene, how to make one, and how to read it back from a photo or your camera. A plain guide, no tech background needed."
+    />
+    <link rel="canonical" href="https://noir-code.suncake.xyz/how-it-works" />
+    <link rel="alternate" hreflang="en" href="https://noir-code.suncake.xyz/how-it-works" />
+    <link rel="alternate" hreflang="ru" href="https://noir-code.suncake.xyz/ru/how-it-works" />
+    <link rel="alternate" hreflang="x-default" href="https://noir-code.suncake.xyz/how-it-works" />
+
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="NoiR Code" />
+    <meta property="og:url" content="https://noir-code.suncake.xyz/how-it-works" />
+    <meta property="og:title" content="How NoiR Code works" />
+    <meta
+      property="og:description"
+      content="A message hidden in a rain-soaked noir city. How to make one, and how to read it back."
+    />
+    <meta property="og:image" content="https://noir-code.suncake.xyz/og.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <!-- The app's own stylesheet, so header, footer and width match the main
+         page; Vite bundles both into the built page. -->
+    <link rel="stylesheet" href="/src/App.css" />
+    <link rel="stylesheet" href="/src/pages.css" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <div class="topbar">
+          <a class="brand" href="/">NoiR Code</a>
+          <nav class="lang" aria-label="Language">
+            <a class="tab active" href="/how-it-works" hreflang="en" aria-current="page">EN</a>
+            <a class="tab" href="/ru/how-it-works" hreflang="ru" lang="ru">RU</a>
+          </nav>
+        </div>
+        <p>Your message, hidden in the shadows of a <em>nocturnal city of rain</em>.</p>
+      </header>
+
+      <h1 class="page-title">How NoiR Code works</h1>
+
+      <div class="stack">
+        <section class="panel prose">
+          <h2>What it is</h2>
+          <p class="lead">Every city keeps its secrets. This one keeps yours.</p>
+          <p>
+            NoiR Code is a code you can scan, like a QR code, except it doesn't look like a
+            barcode. It looks like a panel from a black-and-white crime comic: a city at night,
+            rain, a moon behind the rooftops. The picture <em>is</em> the code. Your message is
+            woven into its shadows, and the right reader can pull it back out.
+          </p>
+          <img
+            src="/og.png"
+            width="1200"
+            height="630"
+            alt="A NoiR Code panel: a halftone noir cityscape with a moon, made entirely of data cells."
+          />
+        </section>
+
+        <section class="panel prose">
+          <h2>Making one</h2>
+          <p class="lead">Write it down. Let the city swallow it.</p>
+          <ol>
+            <li>Open <a href="/">NoiR Code</a> and type your message: a note, a name, a link.</li>
+            <li>Press <strong>Encode</strong>. A new night scene is drawn around your words.</li>
+            <li>Download the picture and use it anywhere: print it, post it, pin it to a wall.</li>
+          </ol>
+          <p>
+            Short messages make smaller, simpler panels. Longer ones fill a bigger city. One
+            panel holds up to about 170 letters of English text, enough for a sentence or a
+            link.
+          </p>
+        </section>
+
+        <section class="panel prose">
+          <h2>Reading one</h2>
+          <p class="lead">Every panel talks, if you know how to listen.</p>
+          <p>Open <a href="/">NoiR Code</a> and choose <strong>Decode</strong>. Then either:</p>
+          <ul>
+            <li>upload a photo or a screenshot of the panel,</li>
+            <li>paste a link to an image of it, or</li>
+            <li>point your camera at it and hold steady.</li>
+          </ul>
+          <p>
+            The panel can be tilted, photographed at an angle, even upside down, and it still
+            reads. Your phone's ordinary camera app or QR scanner won't recognise it, though:
+            NoiR Code speaks its own language, and only its own reader knows it.
+          </p>
+        </section>
+
+        <section class="panel prose">
+          <h2>How the message hides</h2>
+          <p class="lead">Look closer. The shadows aren't random.</p>
+          <p>
+            Behind the art sits a grid of tiny squares. Each square is painted one of a few
+            shades of grey, from pale to deep black, and each shade stands for a small piece of
+            your message. The city, the rain and the moon are drawn around those squares. They
+            make it a picture, but only the squares carry words.
+          </p>
+          <p>
+            The heavy black frame around the panel is how the reader finds it in a messy photo.
+            Once found, the reader straightens the picture out, reads the shade of every square,
+            and turns the shades back into text.
+          </p>
+          <p>
+            Every message also carries extra repair information, mixed in and spread across
+            the whole panel. If glare, a crease or a thumb hides part of the picture, the reader
+            uses it to rebuild the missing pieces from the rest. In testing, a panel still reads with about a tenth
+            of it covered up.
+          </p>
+        </section>
+
+        <section class="panel prose">
+          <h2>Questions</h2>
+
+          <h3>Is it a QR code?</h3>
+          <p>
+            It does the same job, but it is its own design and doesn't follow the QR standard.
+            That's what lets it look like a comic panel instead of a barcode.
+          </p>
+
+          <h3>How much can I fit?</h3>
+          <p>
+            About 170 letters of English. Some characters take more room than others: Cyrillic
+            letters take twice the space, and emoji take more still.
+          </p>
+
+          <h3>Is my message secret?</h3>
+          <p>
+            Hidden, not locked. Anyone who has the panel and opens NoiR Code can read it, the
+            same way anyone can scan a QR code. Don't put passwords or private information in
+            one.
+          </p>
+
+          <h3>Do you keep what I encode?</h3>
+          <p>
+            No. Panels are drawn and read on the fly, and there is no database to keep them in.
+          </p>
+
+          <h3>Does it cost anything?</h3>
+          <p>
+            It's free, and the code behind it is open source on
+            <a href="https://github.com/sunkek/noir-code">GitHub</a>.
+          </p>
+        </section>
+
+      </div>
+
+      <a class="cta" href="/">Make your own panel</a>
+
+      <footer class="site-footer">
+        <a href="/">NoiR Code</a>
+        <span class="foot-sep" aria-hidden="true">·</span>
+        <a href="https://github.com/sunkek/noir-code" target="_blank" rel="noopener noreferrer">Source code ↗</a>
+        <span class="foot-sep" aria-hidden="true">·</span>
+        <a href="https://suncake.xyz/" target="_blank" rel="noopener noreferrer">suncake.xyz ↗</a>
+      </footer>
+    </main>
+  </body>
+</html>

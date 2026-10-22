@@ -18,6 +18,13 @@ export type Dict = {
   encodeBtn: string
   encoding: string
   downloadPng: string
+  aboutTitle: string
+  aboutLead: string
+  aboutBody: string
+  aboutPoints: string[]
+  aboutMore: string
+  howItWorks: string
+  howItWorksHref: string
   sourceCode: string
   madeBy: string
   upload: string
@@ -57,6 +64,19 @@ const en: Dict = {
   encodeBtn: 'Encode',
   encoding: 'Encoding…',
   downloadPng: 'Download PNG',
+  aboutTitle: 'What is NoiR Code?',
+  aboutLead: 'A QR code that is also a noir comic panel.',
+  aboutBody:
+    'NoiR Code turns a short message or a link into a picture of a rain-soaked city at night. The picture is the code: the shades of its shadows carry your words, and the decoder on this page reads them back from a photo, a screenshot or your camera.',
+  aboutPoints: [
+    'Up to about 170 letters of text, or a link, in one panel.',
+    'Reads from phone photos and screenshots, even tilted or upside down.',
+    'Built-in repair data rebuilds parts lost to glare, blur or a crease.',
+    'Free, and open source.',
+  ],
+  aboutMore: 'How NoiR Code works →',
+  howItWorks: 'How it works',
+  howItWorksHref: '/how-it-works',
   sourceCode: 'Source code ↗',
   madeBy: 'suncake.xyz ↗',
   upload: 'Upload',
@@ -96,6 +116,19 @@ const ru: Dict = {
   encodeBtn: 'Кодировать',
   encoding: 'Кодирую…',
   downloadPng: 'Скачать PNG',
+  aboutTitle: 'Что такое NoiR Code?',
+  aboutLead: 'QR-код, который выглядит как кадр нуарного комикса.',
+  aboutBody:
+    'NoiR Code превращает короткое послание или ссылку в картинку ночного города под дождём. Картинка и есть код: оттенки её теней несут твои слова, а декодер на этой странице прочитает их обратно с фото, скриншота или камеры.',
+  aboutPoints: [
+    'До 170 латинских или около 85 русских букв, либо ссылка, в одной панели.',
+    'Читается с фото и скриншотов, даже под углом или вверх ногами.',
+    'Встроенные данные для восстановления спасают то, что скрыли блик, размытие или сгиб.',
+    'Бесплатно, с открытым исходным кодом.',
+  ],
+  aboutMore: 'Как работает NoiR Code →',
+  howItWorks: 'Как это работает',
+  howItWorksHref: '/ru/how-it-works',
   sourceCode: 'Исходный код ↗',
   madeBy: 'suncake.xyz ↗',
   upload: 'Загрузить',

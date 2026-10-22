@@ -9,6 +9,8 @@ const byteLen = (s: string) => new TextEncoder().encode(s).length
 // Prefill the encode box from a ?text= (or ?d=) query param, else a sensible default.
 // e.g. https://noir-code.suncake.xyz/?text=hello
 function initialEncodeText(): string {
+  // No window during the build-time prerender (scripts/prerender.mjs).
+  if (typeof window === 'undefined') return 'https://noir-code.suncake.xyz'
   const p = new URLSearchParams(window.location.search)
   return p.get('text') ?? p.get('d') ?? 'https://noir-code.suncake.xyz'
 }
@@ -484,6 +486,24 @@ function Decoder({ t }: { t: Dict }) {
   )
 }
 
+// Plain-language description under the tool. Visitors and search engines read
+// the same text: it is prerendered into index.html along with the rest of the app.
+function About({ t }: { t: Dict }) {
+  return (
+    <section className="panel about">
+      <h2>{t.aboutTitle}</h2>
+      <p className="about-lead">{t.aboutLead}</p>
+      <p>{t.aboutBody}</p>
+      <ul>
+        {t.aboutPoints.map((point) => (
+          <li key={point}>{point}</li>
+        ))}
+      </ul>
+      <a href={t.howItWorksHref}>{t.aboutMore}</a>
+    </section>
+  )
+}
+
 export default function App() {
   const [lang, setLang] = useState<Lang>(loadLang)
   const t = I18N[lang]
@@ -517,7 +537,10 @@ export default function App() {
         <Encoder t={t} />
         <Decoder t={t} />
       </div>
+      <About t={t} />
       <footer className="site-footer">
+        <a href={t.howItWorksHref}>{t.howItWorks}</a>
+        <span className="foot-sep" aria-hidden="true">·</span>
         <a href="https://github.com/sunkek/noir-code" target="_blank" rel="noopener noreferrer">
           {t.sourceCode}
         </a>

@@ -28,14 +28,28 @@ const backendPort =
 const proxyTarget =
   process.env.NOIRCODE_API_PROXY_TARGET ?? `http://localhost:${backendPort}`
 
-export default defineConfig({
+export default defineConfig(({ isSsrBuild }) => ({
   plugins: [react()],
   server: {
     proxy: {
       '/api': { target: proxyTarget, changeOrigin: true },
     },
   },
+  // The content pages and the 404 page are HTML entries of their own, so they
+  // share App.css with the app and ship as plain, crawlable HTML. nginx serves
+  // them by path (/how-it-works -> how-it-works.html; .docker/nginx.conf).
+  // The SSR build (the prerender's server entry) takes its input from --ssr.
+  build: isSsrBuild ? {} : {
+    rolldownOptions: {
+      input: {
+        main: path.resolve(import.meta.dirname, 'index.html'),
+        howItWorks: path.resolve(import.meta.dirname, 'how-it-works.html'),
+        howItWorksRu: path.resolve(import.meta.dirname, 'ru/how-it-works.html'),
+        notFound: path.resolve(import.meta.dirname, '404.html'),
+      },
+    },
+  },
   define: {
     'import.meta.env.VITE_API_BASE': JSON.stringify('/api/v1'),
   },
-})
+}))
