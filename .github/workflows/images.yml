@@ -1,8 +1,8 @@
 name: build-images
 
 # Build the three service images and push them to GHCR. Packages inherit the
-# repo's visibility — make them public (or add an imagePullSecret in k3s) so the
-# cluster can pull. Images: ghcr.io/<owner>/noircode-{imaging,backend,frontend}.
+# repo's visibility — make them public (or log the host in to GHCR) so the
+# production host can pull. Images: ghcr.io/<owner>/noircode-{imaging,backend,frontend}.
 #
 # Path-filtered: each component's build only runs when its source tree (or this
 # workflow) changed. A tag push or manual dispatch forces all three to rebuild,
@@ -118,12 +118,13 @@ jobs:
           cache-from: type=gha,scope=frontend
           cache-to: type=gha,mode=max,scope=frontend
 
-  # Continuous deploy: pin each Deployment to the freshly-built SHA and roll out,
-  # but only for services that were actually rebuilt this run. Requires repo
-  # secret KUBECONFIG_B64 = base64 of a kubeconfig whose current context targets
-  # the cluster (namespace noircode). Runs on main only. ``if: always()`` lets
-  # the deploy proceed even when some build jobs were skipped (no changes for
-  # that service); failed builds still block via the per-service guards below.
+  # Continuous deploy: point the services that were rebuilt this run at the
+  # fresh SHA and bring the compose stack up. The host side is /opt/ci-deploy.sh,
+  # which the deploy key is forced to run: it only accepts NAME_TAG=<sha> pairs,
+  # writes them into /opt/noircode/.env, then pulls and runs `up -d --wait`.
+  # Requires repo secrets DEPLOY_HOST, DEPLOY_SSH_KEY and DEPLOY_KNOWN_HOSTS;
+  # without DEPLOY_SSH_KEY the job no-ops. ``if: always()`` lets the deploy
+  # proceed when some build jobs were skipped; a failed build still blocks it.
   deploy:
     needs: [changes, build-imaging, build-backend, build-frontend]
     if: |
@@ -135,36 +136,31 @@ jobs:
     runs-on: ubuntu-latest
     concurrency: deploy-noircode # never overlap two rollouts
     env:
-      KUBECONFIG_B64: ${{ secrets.KUBECONFIG_B64 }}
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+      DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
       IMAGING_CHANGED: ${{ needs.changes.outputs.imaging }}
       BACKEND_CHANGED: ${{ needs.changes.outputs.backend }}
       FRONTEND_CHANGED: ${{ needs.changes.outputs.frontend }}
       FORCE_ALL: ${{ github.event_name == 'workflow_dispatch' }}
     steps:
-      - uses: azure/setup-kubectl@829323503d1be3d00ca8346e5391ca0b07a9ab0d # v5.1.0
-
       - name: Roll out changed images
         run: |
-          if [ -z "$KUBECONFIG_B64" ]; then
-            echo "KUBECONFIG_B64 secret not set — skipping deploy."
+          if [ -z "$DEPLOY_SSH_KEY" ]; then
+            echo "DEPLOY_SSH_KEY secret not set — skipping deploy."
             exit 0
           fi
-          mkdir -p ~/.kube
-          echo "$KUBECONFIG_B64" | base64 -d > ~/.kube/config
-          chmod 600 ~/.kube/config
-          owner=${GITHUB_REPOSITORY_OWNER,,}
-          to_roll=()
-          roll() {
-            local svc=$1
-            kubectl -n noircode set image "deployment/$svc" \
-              "$svc=ghcr.io/$owner/noircode-$svc:${GITHUB_SHA}"
-            to_roll+=("deployment/$svc")
-          }
-          if [ "$IMAGING_CHANGED" = "true" ] || [ "$FORCE_ALL" = "true" ]; then roll imaging; fi
-          if [ "$BACKEND_CHANGED" = "true" ] || [ "$FORCE_ALL" = "true" ]; then roll backend; fi
-          if [ "$FRONTEND_CHANGED" = "true" ] || [ "$FORCE_ALL" = "true" ]; then roll frontend; fi
-          if [ ${#to_roll[@]} -eq 0 ]; then
+          tags=()
+          if [ "$IMAGING_CHANGED" = "true" ] || [ "$FORCE_ALL" = "true" ]; then tags+=("IMAGING_TAG=$GITHUB_SHA"); fi
+          if [ "$BACKEND_CHANGED" = "true" ] || [ "$FORCE_ALL" = "true" ]; then tags+=("BACKEND_TAG=$GITHUB_SHA"); fi
+          if [ "$FRONTEND_CHANGED" = "true" ] || [ "$FORCE_ALL" = "true" ]; then tags+=("FRONTEND_TAG=$GITHUB_SHA"); fi
+          if [ ${#tags[@]} -eq 0 ]; then
             echo "No services changed; nothing to roll out."
             exit 0
           fi
-          kubectl -n noircode rollout status "${to_roll[@]}" --timeout=180s
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/deploy_key
+          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o BatchMode=yes \
+            "deploy@$DEPLOY_HOST" "${tags[@]}"

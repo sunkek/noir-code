@@ -1,0 +1,70 @@
+# NoiR Code production stack, run from /opt/noircode on the host behind its
+# shared Traefik (external network `traefik`, resolver `letsencrypt`).
+#
+# Images come from GHCR, pinned per service by the tags in .env next to this
+# file (written by CI on every deploy):
+#   IMAGING_TAG=<sha>  BACKEND_TAG=<sha>  FRONTEND_TAG=<sha>
+#
+#   docker compose -f docker-compose.prod.yml pull
+#   docker compose -f docker-compose.prod.yml up -d
+name: noircode
+
+services:
+  imaging:
+    image: ghcr.io/sunkek/noircode-imaging:${IMAGING_TAG:-latest}
+    container_name: noircode_imaging
+    restart: unless-stopped
+    expose:
+      - 8001
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8001/health').status==200 else 1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  backend:
+    image: ghcr.io/sunkek/noircode-backend:${BACKEND_TAG:-latest}
+    container_name: noircode_backend
+    restart: unless-stopped
+    depends_on:
+      imaging:
+        condition: service_healthy
+    environment:
+      NOIRCODE_API_FIBER_HOST: "0.0.0.0"
+      NOIRCODE_API_FIBER_PORT: "8000"
+      NOIRCODE_API_HEALTH_PORT: "3333"
+      NOIRCODE_API_IMAGING_BASE_URL: "http://imaging:8001"
+      NOIRCODE_API_FIBER_SWAGGER_FILE_PATH: "/docs/swagger.json"
+    expose:
+      - 8000
+    healthcheck:
+      test: ["CMD", "/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  # The only service on the shared `traefik` network; it reaches the backend
+  # over this project's own default network.
+  frontend:
+    image: ghcr.io/sunkek/noircode-frontend:${FRONTEND_TAG:-latest}
+    container_name: noircode_frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - default
+      - traefik
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: traefik
+      traefik.http.routers.noircode.rule: Host(`noir-code.suncake.xyz`)
+      traefik.http.routers.noircode.entrypoints: websecure
+      traefik.http.routers.noircode.tls.certresolver: letsencrypt
+      traefik.http.services.noircode.loadbalancer.server.port: "80"
+
+networks:
+  traefik:
+    external: true
