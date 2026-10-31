@@ -22,6 +22,7 @@ export type Dict = {
   aboutLead: string
   aboutBody: string
   aboutPoints: string[]
+  aboutFaq: { q: string; a: string }[]
   aboutMore: string
   howItWorks: string
   howItWorksHref: string
@@ -74,6 +75,24 @@ const en: Dict = {
     'Built-in repair data rebuilds parts lost to glare, blur or a crease.',
     'Free, and open source.',
   ],
+  aboutFaq: [
+    {
+      q: 'Is it a QR code?',
+      a: "It does the same job, but it is its own design and doesn't follow the QR standard. That is what lets it look like a comic panel instead of a barcode, and it means your phone's camera app won't read it: use the decoder on this page.",
+    },
+    {
+      q: 'What can I put in it?',
+      a: 'A note, a name or a link: about 170 letters of English, or about 85 of Cyrillic. Short messages make smaller, simpler panels, and longer ones fill a bigger city.',
+    },
+    {
+      q: 'How do I make one?',
+      a: 'Type your message, press Encode and download the picture. Print it, post it or pin it to a wall.',
+    },
+    {
+      q: 'What if the photo is bad?',
+      a: 'A panel still reads when it is tilted, shot at an angle or upside down. In testing it reads with about a tenth of it covered up.',
+    },
+  ],
   aboutMore: 'How NoiR Code works →',
   howItWorks: 'How it works',
   howItWorksHref: '/how-it-works',
@@ -125,6 +144,24 @@ const ru: Dict = {
     'Читается с фото и скриншотов, даже под углом или вверх ногами.',
     'Встроенные данные для восстановления спасают то, что скрыли блик, размытие или сгиб.',
     'Бесплатно, с открытым исходным кодом.',
+  ],
+  aboutFaq: [
+    {
+      q: 'Это QR-код?',
+      a: 'Работает так же, но это собственная разработка, не по стандарту QR. Поэтому он выглядит как кадр из комикса, а не как штрихкод, и поэтому обычная камера телефона его не прочитает: нужен декодер на этой странице.',
+    },
+    {
+      q: 'Что можно в него записать?',
+      a: 'Записку, имя или ссылку: до 170 латинских или около 85 русских букв. Короткое послание даёт маленькую простую панель, а длинное заполняет целый город.',
+    },
+    {
+      q: 'Как его сделать?',
+      a: 'Напиши послание, нажми «Кодировать» и скачай картинку. Её можно распечатать, выложить в сеть или повесить на стену.',
+    },
+    {
+      q: 'А если фото плохое?',
+      a: 'Панель читается под углом и даже вверх ногами. В тестах она читается, когда закрыта примерно десятая её часть.',
+    },
   ],
   aboutMore: 'Как работает NoiR Code →',
   howItWorks: 'Как это работает',

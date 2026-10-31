@@ -231,6 +231,10 @@ button:disabled {
 .about li {
   margin: 0.3rem 0;
 }
+.about h3 {
+  font-size: 1rem;
+  margin: 1rem 0 0.25rem;
+}
 .about .about-lead {
   color: var(--muted);
   font-style: italic;

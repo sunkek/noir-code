@@ -499,6 +499,12 @@ function About({ t }: { t: Dict }) {
           <li key={point}>{point}</li>
         ))}
       </ul>
+      {t.aboutFaq.map(({ q, a }) => (
+        <div key={q}>
+          <h3>{q}</h3>
+          <p>{a}</p>
+        </div>
+      ))}
       <a href={t.howItWorksHref}>{t.aboutMore}</a>
     </section>
   )
@@ -547,6 +553,10 @@ export default function App() {
         <span className="foot-sep" aria-hidden="true">·</span>
         <a href="https://suncake.xyz/" target="_blank" rel="noopener noreferrer">
           {t.madeBy}
+        </a>
+        <span className="foot-sep" aria-hidden="true">·</span>
+        <a href="https://whileyouwait.suncake.xyz/" target="_blank" rel="noopener noreferrer">
+          WhileYouWait ↗
         </a>
       </footer>
     </main>
