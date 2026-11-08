@@ -13,23 +13,31 @@ Run with ``noir-api`` (installs the ``api`` extra) or ``uvicorn noircode.api:app
 
 from __future__ import annotations
 
+import asyncio
 import dataclasses
 import os
 
 import cv2
-import numpy as np
 from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
 from noircode.config import Config
+from noircode.decode.decoder import DecodeResult
 from noircode.decode.decoder import decode as decode_panel
 from noircode.ecc import EccError
 from noircode.encode.encoder import encode as encode_text
 from noircode.payload import FrameError
+from noircode.upload import ImageRejected, decode_upload
 
 app = FastAPI(title="NoiR Code imaging sidecar", version="0.1.0")
+
+# Decodes run off the event loop (so /health still answers during one) but at most
+# this many at once: each holds a full image buffer plus the pipeline's working
+# copies, and this bound is what makes the container's memory limit predictable.
+_DECODE_SLOTS = asyncio.Semaphore(int(os.environ.get("NOIRCODE_DECODE_CONCURRENCY", "2")))
 
 # Permissive CORS by default for local dev (the Go gateway also fronts this in prod and
 # does not need it). Lock down with NOIRCODE_API_CORS_ORIGINS="https://a,https://b".
@@ -105,16 +113,13 @@ def encode(req: EncodeRequest) -> Response:
 async def decode(image: UploadFile = File(...)) -> DecodeResponse:
     """Decode an uploaded panel image to text + diagnostics."""
     raw = await image.read()
-    if not raw:
-        raise HTTPException(status_code=400, detail="empty image upload")
-    arr = np.frombuffer(raw, dtype=np.uint8)
-    img = cv2.imdecode(arr, cv2.IMREAD_GRAYSCALE)
-    if img is None:
-        raise HTTPException(status_code=400, detail="cannot decode image bytes")
-    try:
-        res = decode_panel(img, Config())
-    except (EccError, FrameError, ValueError) as exc:
-        raise HTTPException(status_code=422, detail=f"decode error: {exc}") from None
+    async with _DECODE_SLOTS:
+        try:
+            res = await run_in_threadpool(_decode_bytes, raw)
+        except ImageRejected as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from None
+        except (EccError, FrameError, ValueError) as exc:
+            raise HTTPException(status_code=422, detail=f"decode error: {exc}") from None
     return DecodeResponse(
         ok=res.ok,
         text=res.text,
@@ -125,6 +130,10 @@ async def decode(image: UploadFile = File(...)) -> DecodeResponse:
         cross_check=res.cross_check,
         failed_stage=res.failed_stage,
     )
+
+
+def _decode_bytes(raw: bytes) -> DecodeResult:
+    return decode_panel(decode_upload(raw), Config())
 
 
 def main() -> None:
