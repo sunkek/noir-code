@@ -20,8 +20,19 @@ func TestPublicClientFromXFF(t *testing.T) {
 		// Only private hops (e.g. internal traffic) → no public client.
 		{"all private", "10.0.0.1, 192.168.1.1", "", false},
 		{"loopback+private", "127.0.0.1, 10.0.0.5", "", false},
+		// Production shape behind Cloudflare: client, CF edge, Traefik. The edge
+		// node is a proxy hop, not the client (it used to be picked, putting
+		// every visitor of one PoP into one rate-limit bucket).
+		{"behind cloudflare", "203.0.113.7, 172.70.1.2, 172.18.0.5", "203.0.113.7", true},
+		{"behind cloudflare v6", "2001:db8::7, 2a06:98c1::1, 172.18.0.5", "2001:db8::7", true},
+		{"spoof behind cloudflare", "1.2.3.4, 203.0.113.7, 162.158.9.9, 172.18.0.5", "203.0.113.7", true},
+		// A forged Cloudflare address on the left is ignored like any other
+		// forgery: the real client still sits to its right.
+		{"forged cf left", "104.16.0.1, 203.0.113.7, 172.70.1.2, 10.0.0.1", "203.0.113.7", true},
+		// Only Cloudflare + private (no client entry at all) → no public client.
+		{"only cf and private", "172.70.1.2, 172.18.0.5", "", false},
 		// IPv6 client.
-		{"ipv6 client", "2606:4700::1111, fd00::1", "2606:4700::1111", true},
+		{"ipv6 client", "2001:db8::1111, fd00::1", "2001:db8::1111", true},
 		// Malformed entries are skipped.
 		{"garbage then public", "not-an-ip, 203.0.113.7, 10.0.0.1", "203.0.113.7", true},
 		{"metadata not trusted as client", "169.254.169.254, 10.0.0.1", "", false},

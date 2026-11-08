@@ -96,8 +96,9 @@ func main() {
 	fiberCmp.Use(middleware.RateLimit(middleware.RateLimitConfig{
 		Max:    cfg.RateLimit.Max,
 		Window: cfg.RateLimit.Window,
-		// Behind Traefik+nginx the socket peer is a proxy; key on the real
-		// client from X-Forwarded-For (spoof-resistant: right-most public IP).
+		// Behind Cloudflare+Traefik+nginx the socket peer is a proxy; key on the
+		// real client from X-Forwarded-For (spoof-resistant: right-most entry
+		// that is neither private nor a Cloudflare edge).
 		KeyFunc: middleware.ClientIP,
 	}))
 	// Expose Prometheus metrics. Public (scraped without a token); in production
