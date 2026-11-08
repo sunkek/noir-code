@@ -11,7 +11,14 @@ import pytest
 from noircode.config import Config
 from noircode.decode.decoder import decode
 from noircode.encode.encoder import encode
-from noircode.upload import MAX_PIXELS, ImageRejected, decode_upload, image_size
+from noircode.upload import (
+    MAX_DECODE_BYTES,
+    MAX_PIXELS,
+    ImageRejected,
+    decode_cost,
+    decode_upload,
+    image_size,
+)
 
 
 def _blank_png(width: int, height: int) -> bytes:
@@ -105,3 +112,71 @@ def test_real_panel_still_decodes(ext: str) -> None:
     params = [cv2.IMWRITE_WEBP_QUALITY, 101] if ext == ".webp" else None
     img = decode_upload(_encoded(ext, panel, params))
     assert decode(img, Config()).text == text
+
+
+RGB = np.dstack([IMG, IMG[::-1], np.full_like(IMG, 128)])
+
+
+@pytest.mark.parametrize(
+    ("ext", "img", "params", "bytes_per_pixel"),
+    [
+        (".png", IMG, None, 2.0),
+        (".jpg", RGB, None, 2.0),  # baseline
+        (".webp", RGB, [cv2.IMWRITE_WEBP_QUALITY, 80], 4.0),
+        # Progressive keeps every component's coefficients: 1 + 2 x component-pixels.
+        (".jpg", IMG, [cv2.IMWRITE_JPEG_PROGRESSIVE, 1], 3.0),
+        (
+            ".jpg",
+            RGB,
+            [
+                cv2.IMWRITE_JPEG_PROGRESSIVE,
+                1,
+                cv2.IMWRITE_JPEG_SAMPLING_FACTOR,
+                cv2.IMWRITE_JPEG_SAMPLING_FACTOR_420,
+            ],
+            4.0,
+        ),
+        (
+            ".jpg",
+            RGB,
+            [
+                cv2.IMWRITE_JPEG_PROGRESSIVE,
+                1,
+                cv2.IMWRITE_JPEG_SAMPLING_FACTOR,
+                cv2.IMWRITE_JPEG_SAMPLING_FACTOR_444,
+            ],
+            7.0,
+        ),
+    ],
+)
+def test_decode_cost_by_format(
+    ext: str, img: np.ndarray, params: list[int] | None, bytes_per_pixel: float
+) -> None:
+    raw = _encoded(ext, img, params)
+    assert decode_cost(raw) == int(457 * 123 * bytes_per_pixel)
+
+
+def test_costly_format_refused_where_cheap_one_is_not() -> None:
+    # Same pixels, same budget: baseline fits, progressive 4:4:4 does not. At full
+    # size this is a 744 KiB file that cost 334 MiB to decode.
+    budget = 457 * 123 * 3
+    baseline = _encoded(".jpg", RGB)
+    progressive = _encoded(
+        ".jpg",
+        RGB,
+        [
+            cv2.IMWRITE_JPEG_PROGRESSIVE,
+            1,
+            cv2.IMWRITE_JPEG_SAMPLING_FACTOR,
+            cv2.IMWRITE_JPEG_SAMPLING_FACTOR_444,
+        ],
+    )
+    assert decode_upload(baseline, max_decode_bytes=budget).shape == (123, 457)
+    with pytest.raises(ImageRejected, match="too costly"):
+        decode_upload(progressive, max_decode_bytes=budget)
+
+
+def test_default_budget_admits_a_50mp_baseline_photo() -> None:
+    # 8160x6120 (a 50 MP phone frame) as PNG/baseline JPEG costs 2 bytes/pixel.
+    assert MAX_DECODE_BYTES >= 8160 * 6120 * 2
+    assert MAX_PIXELS >= 8160 * 6120
