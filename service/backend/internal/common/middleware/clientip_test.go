@@ -24,7 +24,12 @@ func TestPublicClientFromXFF(t *testing.T) {
 		// node is a proxy hop, not the client (it used to be picked, putting
 		// every visitor of one PoP into one rate-limit bucket).
 		{"behind cloudflare", "203.0.113.7, 172.70.1.2, 172.18.0.5", "203.0.113.7", true},
-		{"behind cloudflare v6", "2001:db8::7, 2a06:98c1::1, 172.18.0.5", "2001:db8::7", true},
+		{"behind cloudflare v6", "2001:db8::7, 2a06:98c1::1, 172.18.0.5", "2001:db8::/64", true},
+		// Two addresses in one /64 share a bucket: rotating within it is free.
+		{"v6 rotation same bucket", "2001:db8:0:0:dead:beef:1:2, 172.70.1.2, 172.18.0.5", "2001:db8::/64", true},
+		{"v6 other /64", "2001:db8:0:1::7, 172.70.1.2, 172.18.0.5", "2001:db8:0:1::/64", true},
+		// IPv4-mapped IPv6 is an IPv4 client.
+		{"v4-mapped", "::ffff:203.0.113.7, 172.70.1.2, 172.18.0.5", "203.0.113.7", true},
 		{"spoof behind cloudflare", "1.2.3.4, 203.0.113.7, 162.158.9.9, 172.18.0.5", "203.0.113.7", true},
 		// A forged Cloudflare address on the left is ignored like any other
 		// forgery: the real client still sits to its right.
@@ -36,7 +41,7 @@ func TestPublicClientFromXFF(t *testing.T) {
 		// Only Cloudflare + private (no client entry at all) → no public client.
 		{"only cf and private", "172.70.1.2, 172.18.0.5", "", false},
 		// IPv6 client.
-		{"ipv6 client", "2001:db8::1111, fd00::1", "2001:db8::1111", true},
+		{"ipv6 client", "2001:db8::1111, fd00::1", "2001:db8::/64", true},
 		// Malformed entries are skipped.
 		{"garbage then public", "not-an-ip, 203.0.113.7, 10.0.0.1", "203.0.113.7", true},
 		{"metadata not trusted as client", "169.254.169.254, 10.0.0.1", "", false},

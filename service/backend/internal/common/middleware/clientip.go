@@ -7,8 +7,9 @@ import (
 	gf "github.com/gofiber/fiber/v3"
 )
 
-// ClientIP resolves the real client IP behind trusted reverse proxies in a
-// spoof-resistant way, for use as a RateLimit KeyFunc.
+// ClientIP resolves the real client behind trusted reverse proxies in a
+// spoof-resistant way, for use as a RateLimit KeyFunc. It returns a bucket key:
+// the IPv4 address, or the IPv6 /64 (see bucket).
 //
 // The deployment chain is client → Cloudflare → Traefik → nginx → backend.
 // Every hop APPENDS the peer it saw to X-Forwarded-For, so the header arriving
@@ -53,9 +54,20 @@ func publicClientFromXFF(xff string) (string, bool) {
 			skippedEdge = true // the edge node Traefik received from
 			continue
 		}
-		return ip.String(), true
+		return bucket(ip), true
 	}
 	return "", false
+}
+
+// bucket returns the rate-limit identity for a client address: the address
+// itself for IPv4, its /64 for IPv6. One IPv6 subscriber or VPS normally holds a
+// whole /64, so keying on the full address would hand an attacker 2^64 fresh
+// buckets.
+func bucket(ip net.IP) string {
+	if ip.To4() != nil {
+		return ip.String()
+	}
+	return (&net.IPNet{IP: ip.Mask(net.CIDRMask(64, 128)), Mask: net.CIDRMask(64, 128)}).String()
 }
 
 // isPublicIP reports whether ip is a globally routable unicast address.
