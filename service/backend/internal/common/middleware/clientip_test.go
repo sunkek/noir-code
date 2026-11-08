@@ -29,6 +29,10 @@ func TestPublicClientFromXFF(t *testing.T) {
 		// A forged Cloudflare address on the left is ignored like any other
 		// forgery: the real client still sits to its right.
 		{"forged cf left", "104.16.0.1, 203.0.113.7, 172.70.1.2, 10.0.0.1", "203.0.113.7", true},
+		// Sent from a Cloudflare Worker: the client is itself a Cloudflare
+		// address. Only the edge hop is skipped, so the forged entry is not
+		// reached (skipping every CF address would return 1.2.3.4).
+		{"worker client", "1.2.3.4, 104.16.5.5, 172.70.1.2, 172.18.0.5", "104.16.5.5", true},
 		// Only Cloudflare + private (no client entry at all) → no public client.
 		{"only cf and private", "172.70.1.2, 172.18.0.5", "", false},
 		// IPv6 client.

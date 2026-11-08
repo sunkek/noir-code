@@ -14,14 +14,16 @@ import (
 // Every hop APPENDS the peer it saw to X-Forwarded-For, so the header arriving
 // here reads "<client>, <cloudflare edge>, <traefik>" — and a client that
 // injects its own X-Forwarded-For only prepends entries to the LEFT of the
-// address Cloudflare observed. The genuine client is therefore the right-most
-// entry that is not one of our proxy hops: private addresses (Traefik, nginx)
-// and Cloudflare's published edge ranges are skipped from the right; anything
-// the client forged stays to the left of the real address and is ignored.
+// address Cloudflare observed. The genuine client is therefore the entry just
+// left of our hops: private addresses (Traefik, nginx) are skipped from the
+// right, then at most ONE Cloudflare address (the edge node Traefik saw), and
+// the next entry is the client — even if it is itself a Cloudflare address.
 //
-// Skipping Cloudflare matters: without it the right-most public entry is the
-// edge node, and every visitor routed through one Cloudflare PoP shares a
-// single rate-limit bucket. The same walk stays correct without Cloudflare in
+// Skipping the edge matters: without it every visitor routed through one PoP
+// shares a single rate-limit bucket. Skipping only one matters too: a request
+// sent from a Cloudflare Worker egresses from a Cloudflare address, so
+// "forged, <worker>, <edge>, <traefik>" must resolve to the worker, not walk
+// on into the forged entries. The same walk stays correct without Cloudflare in
 // front (dev, or a request that reached Traefik directly — Traefik does not
 // trust XFF from non-Cloudflare peers and replaces it with the real peer).
 //
@@ -34,18 +36,24 @@ func ClientIP(c gf.Ctx) string {
 	return c.IP()
 }
 
-// publicClientFromXFF returns the right-most public, non-Cloudflare IP in an
-// X-Forwarded-For value, or ok=false if there is none.
+// publicClientFromXFF returns the client entry of an X-Forwarded-For value as
+// described on ClientIP, or ok=false if there is none.
 func publicClientFromXFF(xff string) (string, bool) {
 	if xff == "" {
 		return "", false
 	}
 	parts := strings.Split(xff, ",")
+	skippedEdge := false
 	for i := len(parts) - 1; i >= 0; i-- {
 		ip := net.ParseIP(strings.TrimSpace(parts[i]))
-		if ip != nil && isPublicIP(ip) && !isCloudflare(ip) {
-			return ip.String(), true
+		if ip == nil || !isPublicIP(ip) {
+			continue // our own private hops
 		}
+		if !skippedEdge && isCloudflare(ip) {
+			skippedEdge = true // the edge node Traefik received from
+			continue
+		}
+		return ip.String(), true
 	}
 	return "", false
 }
