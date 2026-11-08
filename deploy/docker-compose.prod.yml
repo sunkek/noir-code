@@ -14,6 +14,11 @@ services:
     image: ghcr.io/sunkek/noircode-imaging:${IMAGING_TAG:-latest}
     container_name: noircode_imaging
     restart: unless-stopped
+    # Parses untrusted uploads. The app refuses images over 50 MP and decodes two at
+    # a time (~460 MiB worst case measured); the limit makes any miss kill this
+    # container rather than OOM the shared host.
+    mem_limit: 768m
+    pids_limit: 256
     expose:
       - 8001
     healthcheck:
@@ -27,6 +32,8 @@ services:
     image: ghcr.io/sunkek/noircode-backend:${BACKEND_TAG:-latest}
     container_name: noircode_backend
     restart: unless-stopped
+    mem_limit: 256m
+    pids_limit: 256
     depends_on:
       imaging:
         condition: service_healthy
@@ -51,6 +58,8 @@ services:
     image: ghcr.io/sunkek/noircode-frontend:${FRONTEND_TAG:-latest}
     container_name: noircode_frontend
     restart: unless-stopped
+    mem_limit: 64m
+    pids_limit: 128
     depends_on:
       backend:
         condition: service_healthy
