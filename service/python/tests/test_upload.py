@@ -3,6 +3,7 @@
 import resource
 import struct
 import zlib
+from pathlib import Path
 
 import cv2
 import numpy as np
@@ -180,3 +181,41 @@ def test_default_budget_admits_a_50mp_baseline_photo() -> None:
     # 8160x6120 (a 50 MP phone frame) as PNG/baseline JPEG costs 2 bytes/pixel.
     assert MAX_DECODE_BYTES >= 8160 * 6120 * 2
     assert MAX_PIXELS >= 8160 * 6120
+
+
+FIXTURES = Path(__file__).parent / "fixtures"
+
+
+def test_sequential_jpeg_split_into_one_scan_per_component_is_charged_as_buffered() -> None:
+    # Made with `jpegtran -scans` from a baseline 4:4:4 image: still a baseline
+    # (SOF0) frame, but each component in its own scan, so libjpeg buffers the
+    # whole image's coefficients. At 50 MP this cost 334 MiB, like progressive.
+    raw = (FIXTURES / "noninterleaved_444.jpg").read_bytes()
+    assert b"\xff\xc0" in raw and b"\xff\xc2" not in raw  # baseline, not progressive
+    assert raw.count(b"\xff\xda") == 3  # three scans, one per component
+    assert decode_cost(raw) == int(457 * 123 * 7.0)
+    assert decode_upload(raw).shape == (123, 457)
+
+
+def _jpeg_with_frame(marker: int, precision: int = 8) -> bytes:
+    frame = struct.pack(">HBHHB", 11, precision, 64, 64, 1) + bytes([1, 0x11, 0])
+    scan = struct.pack(">HB", 8, 1) + bytes([1, 0, 0, 63, 0])
+    return b"\xff\xd8" + bytes([0xFF, marker]) + frame + b"\xff\xda" + scan + b"\x00" * 16
+
+
+@pytest.mark.parametrize(
+    ("marker", "precision", "message"),
+    [
+        (0xC0, 12, "precision"),  # 12-bit baseline
+        (0xC3, 8, "lossless"),
+        (0xC7, 8, "hierarchical"),
+        (0xCB, 8, "lossless"),
+    ],
+)
+def test_rare_jpeg_variants_are_refused(marker: int, precision: int, message: str) -> None:
+    with pytest.raises(ImageRejected, match=message):
+        decode_upload(_jpeg_with_frame(marker, precision))
+
+
+def test_hand_built_header_parses_as_baseline() -> None:
+    assert decode_cost(_jpeg_with_frame(0xC0)) == 64 * 64 * 2

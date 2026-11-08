@@ -71,14 +71,25 @@ def _header(raw: bytes) -> tuple[int, int, float]:
     raise ImageRejected("unsupported image format; use PNG, JPEG or WebP")
 
 
-# Start-of-frame markers carry the frame dimensions. C4 (DHT), C8 (JPG) and CC (DAC)
-# share the range but are not frames. The progressive ones buffer every component's
-# DCT coefficients for the whole image.
-_JPEG_SOF = {0xC0, 0xC1, 0xC2, 0xC3, 0xC5, 0xC6, 0xC7, 0xC9, 0xCA, 0xCB, 0xCD, 0xCE, 0xCF}
-_JPEG_PROGRESSIVE = {0xC2, 0xC6, 0xCA, 0xCE}
+# Start-of-frame markers carry the frame dimensions. Only the variants browsers and
+# cameras produce are accepted: baseline/extended sequential and progressive, Huffman
+# or arithmetic coded. Lossless and hierarchical frames are refused.
+_JPEG_SOF_ACCEPTED = {0xC0, 0xC1, 0xC2, 0xC9, 0xCA}
+_JPEG_SOF_REFUSED = {0xC3, 0xC5, 0xC6, 0xC7, 0xCB, 0xCD, 0xCE, 0xCF}
+_JPEG_PROGRESSIVE = {0xC2, 0xCA}
+_JPEG_SOS = 0xDA
 
 
 def _jpeg_header(raw: bytes) -> tuple[int, int, float]:
+    """Walk the markers to the first scan; the frame and that scan set the cost.
+
+    A single interleaved scan carrying every component streams through the decoder
+    at ~2 bytes/pixel. Otherwise libjpeg buffers every component's DCT coefficients
+    for the whole image: always for progressive, and also for a sequential image
+    split into one scan per component (measured: same 50 MP image, 95 MiB
+    interleaved vs 334 MiB split).
+    """
+    frame: tuple[int, int, int, list[int]] | None = None
     i = 2
     while i < len(raw):
         if raw[i] != 0xFF:
@@ -90,20 +101,32 @@ def _jpeg_header(raw: bytes) -> tuple[int, int, float]:
         if marker == 0x01 or 0xD0 <= marker <= 0xD9:  # standalone markers, no length
             continue
         (length,) = struct.unpack(">H", raw[i : i + 2])
-        if marker in _JPEG_SOF:
-            height, width, ncomp = struct.unpack(">HHB", raw[i + 3 : i + 8])
-            if marker not in _JPEG_PROGRESSIVE:
-                return width, height, 2.0
+        if marker in _JPEG_SOF_REFUSED:
+            raise ImageRejected("unsupported JPEG variant (lossless or hierarchical)")
+        if marker in _JPEG_SOF_ACCEPTED:
+            if frame is not None:
+                raise ImageRejected("malformed JPEG: more than one frame header")
+            precision, height, width, ncomp = struct.unpack(">BHHB", raw[i + 2 : i + 8])
+            if precision != 8:
+                raise ImageRejected("unsupported JPEG precision; use 8-bit")
             sampling = [raw[i + 8 + 3 * c + 1] for c in range(ncomp)]
             if not sampling:
                 raise ImageRejected("JPEG frame has no components")
+            frame = (width, height, marker, sampling)
+        if marker == _JPEG_SOS:
+            if frame is None:
+                raise ImageRejected("JPEG scan before frame header")
+            width, height, sof, sampling = frame
+            scan_components = raw[i + 2]
+            if sof not in _JPEG_PROGRESSIVE and scan_components == len(sampling):
+                return width, height, 2.0
             hmax = max(sf >> 4 for sf in sampling) or 1
             vmax = max(sf & 0x0F for sf in sampling) or 1
             # Fraction of full-resolution pixels each component stores.
             component_pixels = sum((sf >> 4) * (sf & 0x0F) / (hmax * vmax) for sf in sampling)
             return width, height, 1.0 + 2.0 * component_pixels
         i += length
-    raise ImageRejected("JPEG has no frame header")
+    raise ImageRejected("JPEG has no scan")
 
 
 def _webp_size(raw: bytes) -> tuple[int, int]:
