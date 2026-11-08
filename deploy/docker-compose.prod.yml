@@ -73,6 +73,16 @@ services:
       traefik.http.routers.noircode.entrypoints: websecure
       traefik.http.routers.noircode.tls.certresolver: letsencrypt
       traefik.http.services.noircode.loadbalancer.server.port: "80"
+      # Security headers on every response, nginx error pages included. CSP here
+      # only covers framing/plugins/base; it does not restrict scripts. The camera
+      # stays allowed for this origin: the scanner uses it.
+      traefik.http.routers.noircode.middlewares: noircode-headers
+      traefik.http.middlewares.noircode-headers.headers.stsSeconds: "31536000"
+      traefik.http.middlewares.noircode-headers.headers.contentTypeNosniff: "true"
+      traefik.http.middlewares.noircode-headers.headers.frameDeny: "true"
+      traefik.http.middlewares.noircode-headers.headers.referrerPolicy: strict-origin-when-cross-origin
+      traefik.http.middlewares.noircode-headers.headers.permissionsPolicy: "camera=(self), microphone=(), geolocation=()"
+      traefik.http.middlewares.noircode-headers.headers.contentSecurityPolicy: "frame-ancestors 'none'; object-src 'none'; base-uri 'self'"
 
 networks:
   traefik:
