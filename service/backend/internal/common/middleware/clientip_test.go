@@ -10,41 +10,29 @@ func TestPublicClientFromXFF(t *testing.T) {
 		ok   bool
 	}{
 		{"empty", "", "", false},
-		// Normal chain: client appended by Traefik, then nginx appends Traefik's
-		// private pod IP. Real client is the right-most public entry.
-		{"client+proxy", "203.0.113.7, 10.42.0.3", "203.0.113.7", true},
-		// Client forges an X-Forwarded-For; forged value sits left of the real
-		// address Traefik observed and must be ignored.
-		{"spoof prepended", "1.2.3.4, 203.0.113.7, 10.42.0.3", "203.0.113.7", true},
-		{"spoof multiple", "9.9.9.9, 8.8.8.8, 203.0.113.7, 10.42.0.3", "203.0.113.7", true},
-		// Only private hops (e.g. internal traffic) → no public client.
-		{"all private", "10.0.0.1, 192.168.1.1", "", false},
-		{"loopback+private", "127.0.0.1, 10.0.0.5", "", false},
-		// Production shape behind Cloudflare: client, CF edge, Traefik. The edge
-		// node is a proxy hop, not the client (it used to be picked, putting
-		// every visitor of one PoP into one rate-limit bucket).
-		{"behind cloudflare", "203.0.113.7, 172.70.1.2, 172.18.0.5", "203.0.113.7", true},
-		{"behind cloudflare v6", "2001:db8::7, 2a06:98c1::1, 172.18.0.5", "2001:db8::/64", true},
-		// Two addresses in one /64 share a bucket: rotating within it is free.
-		{"v6 rotation same bucket", "2001:db8:0:0:dead:beef:1:2, 172.70.1.2, 172.18.0.5", "2001:db8::/64", true},
-		{"v6 other /64", "2001:db8:0:1::7, 172.70.1.2, 172.18.0.5", "2001:db8:0:1::/64", true},
-		// IPv4-mapped IPv6 is an IPv4 client.
-		{"v4-mapped", "::ffff:203.0.113.7, 172.70.1.2, 172.18.0.5", "203.0.113.7", true},
-		{"spoof behind cloudflare", "1.2.3.4, 203.0.113.7, 162.158.9.9, 172.18.0.5", "203.0.113.7", true},
-		// A forged Cloudflare address on the left is ignored like any other
-		// forgery: the real client still sits to its right.
-		{"forged cf left", "104.16.0.1, 203.0.113.7, 172.70.1.2, 10.0.0.1", "203.0.113.7", true},
-		// Sent from a Cloudflare Worker: the client is itself a Cloudflare
-		// address. Only the edge hop is skipped, so the forged entry is not
-		// reached (skipping every CF address would return 1.2.3.4).
-		{"worker client", "1.2.3.4, 104.16.5.5, 172.70.1.2, 172.18.0.5", "104.16.5.5", true},
-		// Only Cloudflare + private (no client entry at all) → no public client.
-		{"only cf and private", "172.70.1.2, 172.18.0.5", "", false},
-		// IPv6 client.
-		{"ipv6 client", "2001:db8::1111, fd00::1", "2001:db8::/64", true},
-		// Malformed entries are skipped.
-		{"garbage then public", "not-an-ip, 203.0.113.7, 10.0.0.1", "203.0.113.7", true},
-		{"metadata not trusted as client", "169.254.169.254, 10.0.0.1", "", false},
+		// Today: client, Cloudflare edge (Traefik's peer), Traefik (nginx's peer).
+		{"via cloudflare edge", "203.0.113.7, 172.70.1.2, 172.21.0.2", "203.0.113.7", true},
+		// Through a Cloudflare Tunnel: Traefik's peer is cloudflared, private.
+		{"via tunnel", "203.0.113.7, 172.19.0.9, 172.21.0.2", "203.0.113.7", true},
+		// Forged entries sit left of the client and are never read.
+		{"spoof prepended", "1.2.3.4, 203.0.113.7, 172.70.1.2, 172.21.0.2", "203.0.113.7", true},
+		{"spoof many", "9.9.9.9, 8.8.8.8, 203.0.113.7, 172.19.0.9, 172.21.0.2", "203.0.113.7", true},
+		// A Cloudflare Worker's egress address is the client, not a hop to skip.
+		{"worker via edge", "1.2.3.4, 104.16.5.5, 172.70.1.2, 172.21.0.2", "104.16.5.5", true},
+		{"worker via tunnel", "1.2.3.4, 104.16.5.5, 172.19.0.9, 172.21.0.2", "104.16.5.5", true},
+		// Too short to have come through the full chain: dev (nginx only), or
+		// Traefik reached directly from an untrusted peer.
+		{"nginx only", "203.0.113.7", "", false},
+		{"direct to traefik", "203.0.113.7, 172.21.0.2", "", false},
+		// The client slot holding a non-public or garbage value is not a client.
+		{"private client slot", "10.0.0.5, 172.19.0.9, 172.21.0.2", "", false},
+		{"garbage client slot", "not-an-ip, 172.19.0.9, 172.21.0.2", "", false},
+		{"metadata client slot", "169.254.169.254, 172.19.0.9, 172.21.0.2", "", false},
+		// IPv6: bucketed by /64, so rotating inside one allocation is free.
+		{"v6", "2001:db8::7, 2a06:98c1::1, 172.21.0.2", "2001:db8::/64", true},
+		{"v6 same /64", "2001:db8:0:0:dead:beef:1:2, 172.19.0.9, 172.21.0.2", "2001:db8::/64", true},
+		{"v6 other /64", "2001:db8:0:1::7, 172.19.0.9, 172.21.0.2", "2001:db8:0:1::/64", true},
+		{"v4-mapped", "::ffff:203.0.113.7, 172.19.0.9, 172.21.0.2", "203.0.113.7", true},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
