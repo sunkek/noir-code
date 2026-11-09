@@ -73,16 +73,34 @@ services:
       traefik.http.routers.noircode.entrypoints: websecure
       traefik.http.routers.noircode.tls.certresolver: letsencrypt
       traefik.http.services.noircode.loadbalancer.server.port: "80"
-      # Security headers on every response, nginx error pages included. CSP here
-      # only covers framing/plugins/base; it does not restrict scripts. The camera
-      # stays allowed for this origin: the scanner uses it.
+      # Security headers on every response, nginx error pages included. The
+      # camera stays allowed for this origin: the scanner uses it.
+      # CSP: scripts only from this origin (plus Cloudflare's analytics beacon)
+      # and no inline script, so an HTML injection cannot run code. blob: images
+      # are the upload previews. Checked in headless Chrome: no violations.
+      traefik.http.routers.noircode.service: noircode
       traefik.http.routers.noircode.middlewares: noircode-headers
       traefik.http.middlewares.noircode-headers.headers.stsSeconds: "31536000"
       traefik.http.middlewares.noircode-headers.headers.contentTypeNosniff: "true"
       traefik.http.middlewares.noircode-headers.headers.frameDeny: "true"
       traefik.http.middlewares.noircode-headers.headers.referrerPolicy: strict-origin-when-cross-origin
       traefik.http.middlewares.noircode-headers.headers.permissionsPolicy: "camera=(self), microphone=(), geolocation=()"
-      traefik.http.middlewares.noircode-headers.headers.contentSecurityPolicy: "frame-ancestors 'none'; object-src 'none'; base-uri 'self'"
+      traefik.http.middlewares.noircode-headers.headers.contentSecurityPolicy: "default-src 'self'; script-src 'self' https://static.cloudflareinsights.com; style-src 'self'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self' https://cloudflareinsights.com; media-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+      # Swagger UI (/api/v1/docs) needs what the app must not have: an inline
+      # bootstrap script, inline styles, Google Fonts and the swagger.io
+      # validator badge. Its own router (the longer rule wins) gives it a looser
+      # policy, so the app's stays strict. Same headers otherwise.
+      traefik.http.routers.noircode-docs.rule: Host(`noir-code.suncake.xyz`) && PathPrefix(`/api/v1/docs`)
+      traefik.http.routers.noircode-docs.entrypoints: websecure
+      traefik.http.routers.noircode-docs.tls.certresolver: letsencrypt
+      traefik.http.routers.noircode-docs.service: noircode
+      traefik.http.routers.noircode-docs.middlewares: noircode-docs-headers
+      traefik.http.middlewares.noircode-docs-headers.headers.stsSeconds: "31536000"
+      traefik.http.middlewares.noircode-docs-headers.headers.contentTypeNosniff: "true"
+      traefik.http.middlewares.noircode-docs-headers.headers.frameDeny: "true"
+      traefik.http.middlewares.noircode-docs-headers.headers.referrerPolicy: strict-origin-when-cross-origin
+      traefik.http.middlewares.noircode-docs-headers.headers.permissionsPolicy: "camera=(self), microphone=(), geolocation=()"
+      traefik.http.middlewares.noircode-docs-headers.headers.contentSecurityPolicy: "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://validator.swagger.io; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
 
 networks:
   traefik:
