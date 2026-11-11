@@ -168,12 +168,21 @@ LOG_CONFIG = {
     "formatters": {"json": {"()": f"{__name__}._JsonFormatter"}},
     "filters": {"no_health": {"()": f"{__name__}._DropHealthProbes"}},
     "handlers": {
-        "stdout": {"class": "logging.StreamHandler", "stream": "ext://sys.stdout", "formatter": "json"},
+        "stdout": {
+            "class": "logging.StreamHandler",
+            "stream": "ext://sys.stdout",
+            "formatter": "json",
+        },
     },
     "loggers": {
         "uvicorn": {"handlers": ["stdout"], "level": "INFO", "propagate": False},
         "uvicorn.error": {"level": "INFO"},
-        "uvicorn.access": {"handlers": ["stdout"], "level": "INFO", "propagate": False, "filters": ["no_health"]},
+        "uvicorn.access": {
+            "handlers": ["stdout"],
+            "level": "INFO",
+            "propagate": False,
+            "filters": ["no_health"],
+        },
     },
 }
 
