@@ -15,6 +15,8 @@ from __future__ import annotations
 
 import asyncio
 import dataclasses
+import json
+import logging
 import os
 
 import cv2
@@ -136,10 +138,50 @@ def _decode_bytes(raw: bytes) -> DecodeResult:
     return decode_panel(decode_upload(raw), Config())
 
 
+class _JsonFormatter(logging.Formatter):
+    """One JSON object per line, so the log pipeline parses fields."""
+
+    def format(self, record: logging.LogRecord) -> str:
+        entry = {
+            "time": self.formatTime(record, "%Y-%m-%dT%H:%M:%S%z"),
+            "level": record.levelname,
+            "logger": record.name,
+            "msg": record.getMessage(),
+        }
+        if record.exc_info:
+            entry["exc"] = self.formatException(record.exc_info)
+        return json.dumps(entry)
+
+
+class _DropHealthProbes(logging.Filter):
+    """The Docker health check hits /health every 10 s; it was nearly every line."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        return "/health" not in record.getMessage()
+
+
+# uvicorn's own loggers, every handler on stdout and JSON. Replaces uvicorn's
+# default config (plain text, access log on stdout, errors on stderr).
+LOG_CONFIG = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {"json": {"()": f"{__name__}._JsonFormatter"}},
+    "filters": {"no_health": {"()": f"{__name__}._DropHealthProbes"}},
+    "handlers": {
+        "stdout": {"class": "logging.StreamHandler", "stream": "ext://sys.stdout", "formatter": "json"},
+    },
+    "loggers": {
+        "uvicorn": {"handlers": ["stdout"], "level": "INFO", "propagate": False},
+        "uvicorn.error": {"level": "INFO"},
+        "uvicorn.access": {"handlers": ["stdout"], "level": "INFO", "propagate": False, "filters": ["no_health"]},
+    },
+}
+
+
 def main() -> None:
     """Console-script entry point: run uvicorn from env (NOIRCODE_API_HOST/PORT)."""
     import uvicorn
 
     host = os.environ.get("NOIRCODE_API_HOST", "0.0.0.0")
     port = int(os.environ.get("NOIRCODE_API_PORT", "8001"))
-    uvicorn.run(app, host=host, port=port)
+    uvicorn.run(app, host=host, port=port, log_config=LOG_CONFIG)
