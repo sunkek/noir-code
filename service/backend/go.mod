@@ -2,7 +2,7 @@ module github.com/noircode/backend
 
 go 1.26.1
 
-toolchain go1.26.10
+toolchain go1.26.11
 
 require (
 	github.com/gofiber/contrib/v3/swaggo v1.0.10
