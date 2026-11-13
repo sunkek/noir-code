@@ -75,8 +75,11 @@ services:
       traefik.http.services.noircode.loadbalancer.server.port: "80"
       # Security headers on every response, nginx error pages included. The
       # camera stays allowed for this origin: the scanner uses it.
-      # CSP: scripts only from this origin (plus Cloudflare's analytics beacon)
-      # and no inline script, so an HTML injection cannot run code. blob: images
+      # CSP: scripts only from this origin (plus the shared Umami tracker,
+      # u-i.suncake.xyz, which also receives its events) and no inline script,
+      # so an HTML injection cannot run code. Nothing secret is in this
+      # origin's storage for the tracker to read; a site that keeps a token
+      # there serves its own copy instead (infra repo, docs/UMAMI.md). blob: images
       # are the upload previews. Checked in headless Chrome: no violations.
       traefik.http.routers.noircode.service: noircode
       traefik.http.routers.noircode.middlewares: noircode-headers
@@ -85,7 +88,7 @@ services:
       traefik.http.middlewares.noircode-headers.headers.frameDeny: "true"
       traefik.http.middlewares.noircode-headers.headers.referrerPolicy: strict-origin-when-cross-origin
       traefik.http.middlewares.noircode-headers.headers.permissionsPolicy: "camera=(self), microphone=(), geolocation=()"
-      traefik.http.middlewares.noircode-headers.headers.contentSecurityPolicy: "default-src 'self'; script-src 'self' https://static.cloudflareinsights.com; style-src 'self'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self' https://cloudflareinsights.com; media-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+      traefik.http.middlewares.noircode-headers.headers.contentSecurityPolicy: "default-src 'self'; script-src 'self' https://u-i.suncake.xyz; style-src 'self'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self' https://u-i.suncake.xyz; media-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
       # Swagger UI (/api/v1/docs) needs what the app must not have: an inline
       # bootstrap script, inline styles, Google Fonts and the swagger.io
       # validator badge. Its own router (the longer rule wins) gives it a looser
